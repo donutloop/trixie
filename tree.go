@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// RouteTreeInterface if like you to implement your own tree version, feel free to do it
 type RouteTreeInterface interface {
 	UseRoute(func() RouteInterface)
 	UseNode(func() NodeInterface)
@@ -12,17 +13,17 @@ type RouteTreeInterface interface {
 	Find(Method, string) RouteInterface
 }
 
-// RadixTree implements a radix tree. This can be treated as a
+// RadixTree implements RouteTreeInterface. This can be treated as a
 // Dictionary abstract data type. The main advantage over
-// a standard hash map is prefix-based lookups and
-// ordered iteration,
+// a standard hash map is prefix-based lookups and ordered iteration.
+// based on go-radix ideas (github.com/armon/go-radix)
 type RadixTree struct {
 	root             NodeInterface
 	nodeConstructor  func() NodeInterface
 	routeConstructor func() RouteInterface
 }
 
-// NewRadixTree returns an empty Tree
+// NewRadixTree returns an empty Radix Tree
 func NewRadixTree(nodeConstructor func() NodeInterface, routeConstructor func() RouteInterface) func() RouteTreeInterface {
 	return func() RouteTreeInterface {
 		tree := &RadixTree{}
@@ -33,10 +34,14 @@ func NewRadixTree(nodeConstructor func() NodeInterface, routeConstructor func() 
 	}
 }
 
+// UseRoute that you can use diffrent route versions
+// See RouteInterface for more details (route.go)
 func (t *RadixTree) UseRoute(constructer func() RouteInterface) {
 	t.routeConstructor = constructer
 }
 
+// UseNode that you can use diffrent node versions
+// See NodeInterface for more details (node.go)
 func (t *RadixTree) UseNode(constructer func() NodeInterface) {
 	t.nodeConstructor = constructer
 }
