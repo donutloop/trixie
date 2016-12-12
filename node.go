@@ -1,20 +1,34 @@
 package tmux
 
-import "sort"
+import (
+	"sort"
+	"strings"
+)
 
 type NodeInterface interface {
 	IsLeaf() bool
-	AddEdge(Edge)
+	AddEdge(*Edge)
 	GetEdge(label byte) NodeInterface
-	ReplaceEdge(e Edge)
+	ReplaceEdge(e *Edge)
 	SetLeaf(RouteInterface) NodeInterface
 	SetPrefixPath(string) NodeInterface
 	GetLeaf() RouteInterface
 	GetPrefixPath() string
 }
 
+type egdeType uint8
+
+const (
+	paramNode egdeType = iota
+	staticNode
+	regexNode
+	edgeTypes
+)
+
 func NewNode() NodeInterface {
-	return &Node{}
+	return &Node{
+		edges: [edgeTypes]Edges{},
+	}
 }
 
 type Node struct {
@@ -27,7 +41,7 @@ type Node struct {
 	// Edges should be stored in-order for iteration.
 	// We avoid a fully materialized slice to save memory,
 	// since in most cases we expect to be sparse
-	edges Edges
+	edges [edgeTypes]Edges
 }
 
 func (n *Node) IsLeaf() bool {
@@ -52,41 +66,60 @@ func (n *Node) GetLeaf() RouteInterface {
 	return n.leaf
 }
 
-func (n *Node) AddEdge(e Edge) {
-	n.edges = append(n.edges, e)
-	n.edges.Sort()
+func (n *Node) AddEdge(e *Edge) {
+
+	n.AddType(e)
+
+	n.edges[e.typ] = append(n.edges[e.typ], e)
+	n.edges[e.typ].Sort()
+}
+
+func (n *Node) AddType(e *Edge) {
+	prefixPath := e.node.GetPrefixPath()
+
+	if strings.Contains(prefixPath, ":") {
+		e.typ = paramNode
+	} else {
+		e.typ = staticNode
+	}
 }
 
 func (n *Node) GetEdge(label byte) NodeInterface {
-	num := len(n.edges)
-	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= label
-	})
-	if idx < num && n.edges[idx].label == label {
-		return n.edges[idx].node
+
+	for _, edges := range n.edges {
+		for _, edge := range edges {
+			if edge.label == label {
+				return edge.node
+			}
+		}
 	}
+
 	return nil
 }
 
-func (n *Node) ReplaceEdge(e Edge) {
-	num := len(n.edges)
-	idx := sort.Search(num, func(i int) bool {
-		return n.edges[i].label >= e.label
-	})
-	if idx < num && n.edges[idx].label == e.label {
-		n.edges[idx].node = e.node
-		return
+func (n *Node) ReplaceEdge(e *Edge) {
+
+	n.AddType(e)
+
+	for _, edge := range n.edges[e.typ] {
+		if edge.label == e.label {
+			*edge = *e
+			edge.label = e.label
+			return
+		}
 	}
+
 	panic("replacing missing edge")
 }
 
-// edge is used to represent an edge node
+// Edge is used to represent an edge node
 type Edge struct {
+	typ   egdeType
 	label byte
 	node  NodeInterface
 }
 
-type Edges []Edge
+type Edges []*Edge
 
 func (e Edges) Len() int {
 	return len(e)

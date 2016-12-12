@@ -52,6 +52,7 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 	var parent NodeInterface
 	currentNode := t.root
 	search := pattern
+
 	for {
 		// Handle key exhaution
 		if len(search) == 0 {
@@ -76,15 +77,17 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 			newLeaf := t.routeConstructor().AddHandler(method, handler).SetPattern(pattern)
 			newNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newLeaf)
 
-			parent.AddEdge(Edge{
+			parent.AddEdge(&Edge{
 				label: search[0],
 				node:  newNode,
 			})
 			return newLeaf
 		}
 
-		// Determine longest prefix of the search key on match
+		// Determine longest prefix of the search key on currentNode
 		commonPrefix := longestPrefix(search, currentNode.GetPrefixPath())
+
+		// Check if they share the same prefix when yes overwrite current search and continue to next iteration
 		if commonPrefix == len(currentNode.GetPrefixPath()) {
 			search = search[commonPrefix:]
 			continue
@@ -93,13 +96,13 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 		// Split the node
 		childNode := t.nodeConstructor().SetPrefixPath(search[:commonPrefix])
 
-		parent.ReplaceEdge(Edge{
+		parent.ReplaceEdge(&Edge{
 			label: search[0],
 			node:  childNode,
 		})
 
 		// Restore the existing node
-		childNode.AddEdge(Edge{
+		childNode.AddEdge(&Edge{
 			label: currentNode.GetPrefixPath()[commonPrefix],
 			node:  currentNode,
 		})
@@ -110,6 +113,7 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 
 		// If the new key is a subset, add to to this node
 		search = search[commonPrefix:]
+
 		if len(search) == 0 {
 			childNode.SetLeaf(newLeaf)
 		}
@@ -117,7 +121,7 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 		// Create a new edge for the node
 		newEdgeNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newLeaf)
 
-		childNode.AddEdge(Edge{
+		childNode.AddEdge(&Edge{
 			label: search[0],
 			node:  newEdgeNode,
 		})
