@@ -6,14 +6,17 @@ import (
 )
 
 type NodeInterface interface {
-	IsLeaf() bool
+	SetPrefixPath(string) NodeInterface
+	GetPrefixPath() string
+	SetPrefixPatternPath(string) NodeInterface
+	GetPrefixPatternPath() string
+	GetEdges() [edgeTypes]Edges
 	AddEdge(*Edge)
 	GetEdge(label byte) NodeInterface
 	ReplaceEdge(e *Edge)
-	SetLeaf(RouteInterface) NodeInterface
-	SetPrefixPath(string) NodeInterface
+	IsLeaf() bool
 	GetLeaf() RouteInterface
-	GetPrefixPath() string
+	SetLeaf(RouteInterface) NodeInterface
 }
 
 type egdeType uint8
@@ -38,6 +41,9 @@ type Node struct {
 	// prefix is the common prefix we ignore
 	prefix string
 
+	//prefixPattern is the common prefix in regex format
+	prefixPattern string
+
 	// Edges should be stored in-order for iteration.
 	// We avoid a fully materialized slice to save memory,
 	// since in most cases we expect to be sparse
@@ -57,6 +63,15 @@ func (n *Node) GetPrefixPath() string {
 	return n.prefix
 }
 
+func (n *Node) SetPrefixPatternPath(prefix string) NodeInterface {
+	n.prefix = prefix
+	return n
+}
+
+func (n *Node) GetPrefixPatternPath() string {
+	return n.prefix
+}
+
 func (n *Node) SetLeaf(leaf RouteInterface) NodeInterface {
 	n.leaf = leaf
 	return n
@@ -70,6 +85,10 @@ func (n *Node) AddEdge(e *Edge) {
 
 	n.AddType(e)
 
+	if e.typ == paramNode {
+		e.node.SetPrefixPatternPath("^" + strings.Replace(e.node.GetPrefixPath(), ":number", "([0-9]{1,})", -1) + "$")
+	}
+
 	n.edges[e.typ] = append(n.edges[e.typ], e)
 	n.edges[e.typ].Sort()
 }
@@ -82,6 +101,10 @@ func (n *Node) AddType(e *Edge) {
 	} else {
 		e.typ = staticNode
 	}
+}
+
+func (n *Node) GetEdges() [edgeTypes]Edges {
+	return n.edges
 }
 
 func (n *Node) GetEdge(label byte) NodeInterface {

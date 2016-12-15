@@ -2,6 +2,7 @@ package tmux
 
 import (
 	"net/http"
+	"regexp"
 	"strings"
 )
 
@@ -10,7 +11,8 @@ type RouteTreeInterface interface {
 	UseRoute(func() RouteInterface)
 	UseNode(func() NodeInterface)
 	Insert(Method, string, http.Handler) RouteInterface
-	Find(Method, string) RouteInterface
+	Find(NodeInterface, Method, string) RouteInterface
+	GetRoot() NodeInterface
 }
 
 // RadixTree implements RouteTreeInterface. This can be treated as a
@@ -44,6 +46,10 @@ func (t *RadixTree) UseRoute(constructer func() RouteInterface) {
 // See NodeInterface for more details (node.go)
 func (t *RadixTree) UseNode(constructer func() NodeInterface) {
 	t.nodeConstructor = constructer
+}
+
+func (t *RadixTree) GetRoot() NodeInterface {
+	return t.root
 }
 
 // Insert is used to add a new entry or update
@@ -132,32 +138,73 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 
 // Find is used to lookup a specific key, returning
 // the value and if it was found
-func (t *RadixTree) Find(method Method, path string) RouteInterface {
-	var currentNode NodeInterface
-	currentNode = t.root
-	for {
-		// Check for key exhaution
-		if len(path) == 0 {
-			if currentNode.IsLeaf() && currentNode.GetLeaf().HasHandler(method) {
-				return currentNode.GetLeaf()
-			}
-			break
+func (t *RadixTree) Find(root NodeInterface, method Method, path string) RouteInterface {
+
+	for typ, edges := range root.GetEdges() {
+
+		if len(edges) == 0 {
+			continue
 		}
 
-		// Look for an edge
-		currentNode = currentNode.GetEdge(path[0])
-		if currentNode == nil {
-			break
+		node, pathSegment, ok := t.findEdge(egdeType(typ), edges, path)
+
+		if !ok {
+			continue
 		}
 
-		// Consume the search prefix
-		if !strings.HasPrefix(path, currentNode.GetPrefixPath()) {
-			break
+		if len(pathSegment) == 0 && node.IsLeaf() {
+
+			return node.GetLeaf()
 		}
 
-		path = path[len(currentNode.GetPrefixPath()):]
+		// recursively find the next node.
+		route := t.Find(node, method, pathSegment)
+		if route != nil {
+			// found a node, return it
+			return route
+		}
 	}
+
 	return nil
+}
+
+func (t *RadixTree) findEdge(typ egdeType, edges Edges, path string) (NodeInterface, string, bool) {
+
+	var matcher func(edge *Edge) (string, bool)
+
+	switch typ {
+	case staticNode:
+		matcher = func(edge *Edge) (string, bool) {
+
+			if edge.label == byte(path[0]) && strings.HasPrefix(path, edge.node.GetPrefixPath()) {
+				return path[len(edge.node.GetPrefixPath()):], true
+			}
+
+			return "", false
+		}
+	case paramNode:
+		fallthrough
+	case regexNode:
+		matcher = func(edge *Edge) (string, bool) {
+			reg := regexp.MustCompile(edge.node.GetPrefixPatternPath())
+
+			location := reg.FindStringIndex(path)
+
+			if 0 == len(location) {
+				return "", false
+			}
+
+			return path[location[1]:], true
+		}
+	}
+
+	for _, edge := range edges {
+		if pathSegment, ok := matcher(edge); ok {
+			return edge.node, pathSegment, true
+		}
+	}
+
+	return nil, "", false
 }
 
 // longestPrefix finds the length of the shared prefix
