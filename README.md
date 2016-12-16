@@ -1,1 +1,1 @@
-# Documentation is coming soon (Pre aplha)
+# Documentation is coming soon (Pre alpha)
