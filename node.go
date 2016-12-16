@@ -64,12 +64,12 @@ func (n *Node) GetPrefixPath() string {
 }
 
 func (n *Node) SetPrefixPatternPath(prefix string) NodeInterface {
-	n.prefix = prefix
+	n.prefixPattern = prefix
 	return n
 }
 
 func (n *Node) GetPrefixPatternPath() string {
-	return n.prefix
+	return n.prefixPattern
 }
 
 func (n *Node) SetLeaf(leaf RouteInterface) NodeInterface {

@@ -122,6 +122,7 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 
 		if len(search) == 0 {
 			childNode.SetLeaf(newLeaf)
+			return newLeaf
 		}
 
 		// Create a new edge for the node
