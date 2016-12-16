@@ -131,8 +131,6 @@ func (n *Node) ReplaceEdge(e *Edge) {
 			return
 		}
 	}
-
-	panic("replacing missing edge")
 }
 
 // Edge is used to represent an edge node

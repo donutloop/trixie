@@ -20,7 +20,6 @@ type routeTestCase struct {
 }
 
 func TestPath(t *testing.T) {
-
 	tests := []routeTestCase{
 		{
 			title:      "(GET) Path route with single path",
@@ -114,6 +113,10 @@ func TestRouterWithMultiRoutes(t *testing.T) {
 		"/api/article/97/comment/9": {
 			key:  "8",
 			path: "/api/article/97/comment/9",
+		},
+		"/api/article/:number/questions/:number": {
+			key:  "9",
+			path: "/api/article/97/questions/4",
 		},
 	}
 
