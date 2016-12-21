@@ -102,17 +102,20 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 		// Split the node
 		childNode := t.nodeConstructor().SetPrefixPath(search[:commonPrefix])
 
-		parent.ReplaceEdge(&Edge{
+		err := parent.ReplaceEdge(&Edge{
 			label: search[0],
 			node:  childNode,
 		})
 
+		if err != nil {
+			panic(err.Error())
+		}
+
 		// Restore the existing node
 		childNode.AddEdge(&Edge{
 			label: currentNode.GetPrefixPath()[commonPrefix],
-			node:  currentNode,
+			node:  currentNode.SetPrefixPath(currentNode.GetPrefixPath()[commonPrefix:]),
 		})
-		currentNode.SetPrefixPath(currentNode.GetPrefixPath()[commonPrefix:])
 
 		// Create a new leaf node
 		newLeaf := t.routeConstructor().SetPattern(pattern).AddHandler(method, handler)

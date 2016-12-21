@@ -1,6 +1,7 @@
 package tmux
 
 import (
+	"errors"
 	"sort"
 	"strings"
 )
@@ -13,7 +14,7 @@ type NodeInterface interface {
 	GetEdges() [edgeTypes]Edges
 	AddEdge(*Edge)
 	GetEdge(label byte) NodeInterface
-	ReplaceEdge(e *Edge)
+	ReplaceEdge(e *Edge) error
 	IsLeaf() bool
 	GetLeaf() RouteInterface
 	SetLeaf(RouteInterface) NodeInterface
@@ -22,8 +23,8 @@ type NodeInterface interface {
 type egdeType uint8
 
 const (
-	paramNode egdeType = iota
-	staticNode
+	staticNode egdeType = iota
+	paramNode
 	regexNode
 	edgeTypes
 )
@@ -120,17 +121,21 @@ func (n *Node) GetEdge(label byte) NodeInterface {
 	return nil
 }
 
-func (n *Node) ReplaceEdge(e *Edge) {
+func (n *Node) ReplaceEdge(e *Edge) error {
 
 	n.AddType(e)
 
-	for _, edge := range n.edges[e.typ] {
-		if edge.label == e.label {
-			*edge = *e
-			edge.label = e.label
-			return
+	for i := 0; i < len(n.edges); i++ {
+		for j := 0; j < len(n.edges[i]); j++ {
+			if n.edges[i][j].label == e.label {
+				n.edges[i] = append(n.edges[i][:j], n.edges[i][j+1:]...)
+				n.edges[e.typ] = append(n.edges[e.typ], e)
+				return nil
+			}
 		}
 	}
+
+	return errors.New("replacing missing edge")
 }
 
 // Edge is used to represent an edge node
