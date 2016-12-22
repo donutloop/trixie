@@ -163,7 +163,7 @@ func (r *Router) Options(pattern string, handler func(http.ResponseWriter, *http
 	return r.RegisterRoute(MethodOptions, pattern, http.HandlerFunc(handler))
 }
 
-// Head registers a new options route for the URL path
+// Head registers a new head route for the URL path
 func (r *Router) Head(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
 	return r.RegisterRoute(MethodHead, pattern, http.HandlerFunc(handler))
 }
