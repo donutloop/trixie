@@ -54,7 +54,7 @@ func (r *Router) UseTree(constructer func() RouteTreeInterface) {
 // mux.GetQueries(req).Get(":number") or mux.GetQueries(req).GetAll()
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	method := lookupMethod(req.Method)
+	method := methods.lookupMethod(req.Method)
 
 	if method == methodNotFound {
 		r.notFoundHandler().ServeHTTP(w, req)
@@ -153,19 +153,56 @@ func (r *Router) Delete(pattern string, handler func(http.ResponseWriter, *http.
 	return r.RegisterRoute(MethodDelete, pattern, http.HandlerFunc(handler))
 }
 
-var methodNotFound Method = -1
+// Patch registers a new patch route for the URL path
+func (r *Router) Patch(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
+	return r.RegisterRoute(MethodPatch, pattern, http.HandlerFunc(handler))
+}
 
-func lookupMethod(method string) Method {
-	if method, found := methods[method]; found {
+// Options registers a new options route for the URL path
+func (r *Router) Options(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
+	return r.RegisterRoute(MethodOptions, pattern, http.HandlerFunc(handler))
+}
+
+// Head registers a new options route for the URL path
+func (r *Router) Head(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
+	return r.RegisterRoute(MethodHead, pattern, http.HandlerFunc(handler))
+}
+
+var methods = newMethods()
+
+type Methods struct {
+	ms map[string]Method
+}
+
+func newMethods() *Methods {
+	return &Methods{
+		ms: methodsMap,
+	}
+}
+
+// lookupMethod check if method exists when return Method else return MethodNotFound
+func (m *Methods) lookupMethod(method string) Method {
+
+	if method, found := m.ms[method]; found {
 		return method
 	}
 
-	return -1
+	return methodNotFound
 }
 
-var methods = map[string]Method{
-	http.MethodGet:    MethodGet,
-	http.MethodPost:   MethodPost,
-	http.MethodPut:    MethodPut,
-	http.MethodDelete: MethodDelete,
+func (m *Methods) Set(method string, methodN Method) {
+	m.ms[method] = methodN
 }
+
+// Methods a map of all standard methods
+var methodsMap = map[string]Method{
+	http.MethodGet:     MethodGet,
+	http.MethodPost:    MethodPost,
+	http.MethodPut:     MethodPut,
+	http.MethodDelete:  MethodDelete,
+	http.MethodPatch:   MethodPatch,
+	http.MethodOptions: MethodOptions,
+	http.MethodHead:    MethodHead,
+}
+
+var methodNotFound Method = -1

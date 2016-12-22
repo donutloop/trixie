@@ -12,10 +12,12 @@ const (
 	MethodPost
 	MethodPut
 	MethodDelete
+	MethodOptions
+	MethodPatch
+	MethodHead
 )
 
 type RouteInterface interface {
-	Kind() uint8
 	AddHandler(method Method, handler http.Handler) RouteInterface
 	SetPattern(string) RouteInterface
 	GetHandler(Method) http.Handler
@@ -31,10 +33,6 @@ func NewRoute() RouteInterface {
 type Route struct {
 	handlers Handlers
 	pattern  string
-}
-
-func (r *Route) Kind() uint8 {
-	return 1
 }
 
 func (r *Route) AddHandler(method Method, handler http.Handler) RouteInterface {
