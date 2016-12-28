@@ -157,14 +157,12 @@ func (t *RadixTree) Find(root NodeInterface, method Method, path string) RouteIn
 		}
 
 		if len(pathSegment) == 0 && node.IsLeaf() {
-
 			return node.GetLeaf()
 		}
 
 		// recursively find the next node.
 		route := t.Find(node, method, pathSegment)
 		if route != nil {
-			// found a node, return it
 			return route
 		}
 	}
