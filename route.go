@@ -20,6 +20,7 @@ const (
 type RouteInterface interface {
 	AddHandler(method Method, handler http.Handler) RouteInterface
 	SetPattern(string) RouteInterface
+	GetPattern() string
 	GetHandler(Method) http.Handler
 	HasHandler(Method) bool
 }

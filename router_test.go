@@ -110,9 +110,9 @@ func TestRouterWithMultiRoutes(t *testing.T) {
 			key:  "7",
 			path: "/api/article/7",
 		},
-		"/api/article/97/comment/9": {
+		"/api/article/:number/comment/9": {
 			key:  "8",
-			path: "/api/article/97/comment/9",
+			path: "/api/article/9/comment/9",
 		},
 		"/api/article/:number/questions/:number": {
 			key:  "9",
