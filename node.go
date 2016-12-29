@@ -85,11 +85,7 @@ func (n *Node) GetLeaf() RouteInterface {
 func (n *Node) AddEdge(e *Edge) {
 
 	n.AddType(e)
-
-	if e.typ == paramNode {
-		e.node.SetPrefixPatternPath("^" + strings.Replace(e.node.GetPrefixPath(), ":number", "([0-9]{1,})", -1) + "$")
-	}
-
+	n.PopulatePattern(e)
 	n.edges[e.typ] = append(n.edges[e.typ], e)
 	n.edges[e.typ].Sort()
 }
@@ -101,6 +97,12 @@ func (n *Node) AddType(e *Edge) {
 		e.typ = paramNode
 	} else {
 		e.typ = staticNode
+	}
+}
+
+func (n *Node) PopulatePattern(e *Edge) {
+	if e.typ == paramNode {
+		e.node.SetPrefixPatternPath("^" + strings.Replace(e.node.GetPrefixPath(), ":number", "([0-9]{1,})", -1))
 	}
 }
 
@@ -128,6 +130,7 @@ func (n *Node) ReplaceEdge(e *Edge) error {
 	for i := 0; i < len(n.edges); i++ {
 		for j := 0; j < len(n.edges[i]); j++ {
 			if n.edges[i][j].label == e.label {
+				n.PopulatePattern(e)
 				n.edges[i] = append(n.edges[i][:j], n.edges[i][j+1:]...)
 				n.edges[e.typ] = append(n.edges[e.typ], e)
 				return nil
