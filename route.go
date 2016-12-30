@@ -23,6 +23,8 @@ type RouteInterface interface {
 	GetPattern() string
 	GetHandler(Method) http.Handler
 	HasHandler(Method) bool
+	GetHandlers() Handlers
+	AddHandlers(Handlers) RouteInterface
 }
 
 func NewRoute() RouteInterface {
@@ -43,6 +45,19 @@ func (r *Route) AddHandler(method Method, handler http.Handler) RouteInterface {
 
 func (r *Route) GetHandler(method Method) http.Handler {
 	return r.handlers[method]
+}
+
+func (r *Route) AddHandlers(handlers Handlers) RouteInterface {
+
+	for method, handler := range handlers {
+		r.AddHandler(method, handler)
+	}
+
+	return r
+}
+
+func (r *Route) GetHandlers() Handlers {
+	return r.handlers
 }
 
 func (r *Route) SetPattern(pattern string) RouteInterface {

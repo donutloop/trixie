@@ -1,16 +1,14 @@
 package tmux
 
 import (
-	"net/http"
 	"regexp"
 	"strings"
 )
 
 // RouteTreeInterface if like you to implement your own tree version, feel free to do it
 type RouteTreeInterface interface {
-	UseRoute(func() RouteInterface)
 	UseNode(func() NodeInterface)
-	Insert(Method, string, http.Handler) RouteInterface
+	Insert(RouteInterface) RouteInterface
 	Find(NodeInterface, Method, string) RouteInterface
 	GetRoot() NodeInterface
 }
@@ -20,26 +18,18 @@ type RouteTreeInterface interface {
 // a standard hash map is prefix-based lookups and ordered iteration.
 // based on go-radix ideas (github.com/armon/go-radix)
 type RadixTree struct {
-	root             NodeInterface
-	nodeConstructor  func() NodeInterface
-	routeConstructor func() RouteInterface
+	root            NodeInterface
+	nodeConstructor func() NodeInterface
 }
 
 // NewRadixTree returns an empty Radix Tree
-func NewRadixTree(nodeConstructor func() NodeInterface, routeConstructor func() RouteInterface) func() RouteTreeInterface {
+func NewRadixTree(nodeConstructor func() NodeInterface) func() RouteTreeInterface {
 	return func() RouteTreeInterface {
 		tree := &RadixTree{}
 		tree.UseNode(nodeConstructor)
-		tree.UseRoute(routeConstructor)
 		tree.root = tree.nodeConstructor()
 		return tree
 	}
-}
-
-// UseRoute that you can use diffrent route versions
-// See RouteInterface for more details (route.go)
-func (t *RadixTree) UseRoute(constructer func() RouteInterface) {
-	t.routeConstructor = constructer
 }
 
 // UseNode that you can use diffrent node versions
@@ -54,23 +44,20 @@ func (t *RadixTree) GetRoot() NodeInterface {
 
 // Insert is used to add a new entry or update
 // an existing entry.
-func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) RouteInterface {
+func (t *RadixTree) Insert(newRoute RouteInterface) RouteInterface {
 	var parent NodeInterface
 	currentNode := t.root
-	search := pattern
+	search := newRoute.GetPattern()
 
 	for {
 		// Handle key exhaution
 		if len(search) == 0 {
 			if currentNode.IsLeaf() {
-				currentNode.GetLeaf().AddHandler(method, handler)
-				currentNode.GetLeaf().SetPattern(pattern)
+				currentNode.SetLeaf(mergeRoutes(currentNode.GetLeaf(), newRoute))
 				return currentNode.GetLeaf()
 			}
 
-			currentNode.SetLeaf(t.routeConstructor())
-			currentNode.GetLeaf().AddHandler(method, handler)
-			currentNode.GetLeaf().SetPattern(pattern)
+			currentNode.SetLeaf(newRoute)
 			return currentNode.GetLeaf()
 		}
 
@@ -80,14 +67,13 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 
 		// No edge, create one
 		if currentNode == nil {
-			newLeaf := t.routeConstructor().AddHandler(method, handler).SetPattern(pattern)
-			newNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newLeaf)
+			newNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newRoute)
 
 			parent.AddEdge(&Edge{
 				label: search[0],
 				node:  newNode,
 			})
-			return newLeaf
+			return newRoute
 		}
 
 		// Determine longest prefix of the search key on currentNode
@@ -117,26 +103,23 @@ func (t *RadixTree) Insert(method Method, pattern string, handler http.Handler) 
 			node:  currentNode.SetPrefixPath(currentNode.GetPrefixPath()[commonPrefix:]),
 		})
 
-		// Create a new leaf node
-		newLeaf := t.routeConstructor().SetPattern(pattern).AddHandler(method, handler)
-
 		// If the new key is a subset, add to to this node
 		search = search[commonPrefix:]
 
 		if len(search) == 0 {
-			childNode.SetLeaf(newLeaf)
-			return newLeaf
+			childNode.SetLeaf(newRoute)
+			return newRoute
 		}
 
 		// Create a new edge for the node
-		newEdgeNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newLeaf)
+		newEdgeNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newRoute)
 
 		childNode.AddEdge(&Edge{
 			label: search[0],
 			node:  newEdgeNode,
 		})
 
-		return newLeaf
+		return newRoute
 	}
 }
 
@@ -223,4 +206,15 @@ func longestPrefix(k1, k2 string) int {
 		}
 	}
 	return i
+}
+
+func mergeRoutes(routes ...RouteInterface) RouteInterface {
+	newRoute := NewRoute()
+	newRoute.SetPattern(routes[0].GetPattern())
+
+	for _, route := range routes {
+		newRoute.AddHandlers(route.GetHandlers())
+	}
+
+	return newRoute
 }
