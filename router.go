@@ -128,7 +128,19 @@ func (r *Router) RegisterRoute(method Method, pattern string, handler http.Handl
 		r.tree = r.treeConstructor()
 	}
 
-	return r.tree.Insert(method, pattern, handler)
+	route := NewRoute()
+	route.AddHandler(method, handler)
+	route.SetPattern(pattern)
+
+	for _, validator := range Validatoren {
+		err := validator.Validate(route)
+
+		if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	return r.tree.Insert(route)
 }
 
 // Handle registers a new route with a matcher for the URL path.

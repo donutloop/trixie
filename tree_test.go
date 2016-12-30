@@ -6,7 +6,7 @@ import (
 )
 
 func TestRadixTreeFind(t *testing.T) {
-	tree := NewRadixTree(NewNode, NewRoute)()
+	tree := NewRadixTree(NewNode)()
 
 	pathTestCases := []struct {
 		title   string
@@ -45,7 +45,12 @@ func TestRadixTreeFind(t *testing.T) {
 	}
 
 	for _, pathTestCase := range pathTestCases {
-		tree.Insert(pathTestCase.method, pathTestCase.pathRaw, http.HandlerFunc(testHandler()))
+
+		route := NewRoute()
+		route.SetPattern(pathTestCase.pathRaw)
+		route.AddHandler(pathTestCase.method, http.HandlerFunc(testHandler()))
+
+		tree.Insert(route)
 	}
 
 	for _, pathTestCase := range pathTestCases {
@@ -67,7 +72,7 @@ func TestRadixTreeFind(t *testing.T) {
 
 func TestFindNotFound(t *testing.T) {
 	root := NewNode()
-	tree := NewRadixTree(NewNode, NewRoute)()
+	tree := NewRadixTree(NewNode)()
 	childNode := tree.Find(root, MethodGet, "/dummy")
 
 	if childNode != nil {
@@ -76,7 +81,7 @@ func TestFindNotFound(t *testing.T) {
 }
 
 func BenchmarkRadixTreeFind(b *testing.B) {
-	tree := NewRadixTree(NewNode, NewRoute)()
+	tree := NewRadixTree(NewNode)()
 
 	paths := []string{
 		"/api/user/1/comment/1",
@@ -96,7 +101,11 @@ func BenchmarkRadixTreeFind(b *testing.B) {
 	}
 
 	for _, path := range paths {
-		tree.Insert(MethodGet, path, http.HandlerFunc(testHandler()))
+
+		route := NewRoute()
+		route.SetPattern(path)
+		route.AddHandler(MethodGet, http.HandlerFunc(testHandler()))
+		tree.Insert(route)
 	}
 
 	for n := 0; n < b.N; n++ {
