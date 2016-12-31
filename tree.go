@@ -209,12 +209,10 @@ func longestPrefix(k1, k2 string) int {
 }
 
 func mergeRoutes(routes ...RouteInterface) RouteInterface {
-	newRoute := NewRoute()
-	newRoute.SetPattern(routes[0].GetPattern())
 
-	for _, route := range routes {
-		newRoute.AddHandlers(route.GetHandlers())
+	for i := 1; i <= len(routes); i++ {
+		routes[0].AddHandlers(routes[i].GetHandlers())
 	}
 
-	return newRoute
+	return routes[0]
 }

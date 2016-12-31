@@ -10,31 +10,31 @@ func TestRadixTreeFind(t *testing.T) {
 
 	pathTestCases := []struct {
 		title   string
-		method  Method
+		method  string
 		pathRaw string
 		path    string
 	}{
 		{
 			title:   "Param path",
-			method:  MethodGet,
+			method:  http.MethodGet,
 			pathRaw: "user/:number/comments/comment/1",
 			path:    "user/1/comments/comment/1",
 		},
 		{
 			title:   "Param path",
-			method:  MethodGet,
+			method:  http.MethodGet,
 			pathRaw: "user/:number/comments",
 			path:    "user/1/comments",
 		},
 		{
 			title:   "Param path",
-			method:  MethodGet,
+			method:  http.MethodGet,
 			pathRaw: "article/:number",
 			path:    "article/4",
 		},
 		{
 			title:   "Param path",
-			method:  MethodGet,
+			method:  http.MethodGet,
 			pathRaw: "article/:number/comment/:number",
 			path:    "article/5/comment/6",
 		},
@@ -56,7 +56,7 @@ func TestRadixTreeFind(t *testing.T) {
 	for _, pathTestCase := range pathTestCases {
 		t.Run(pathTestCase.title, func(t *testing.T) {
 
-			route := tree.Find(tree.GetRoot(), pathTestCase.method, pathTestCase.path)
+			route := tree.Find(tree.GetRoot(), methods.lookup(pathTestCase.method), pathTestCase.path)
 
 			if route == nil {
 				t.Errorf("Route not found (Expected: %v, %v)", pathTestCase.pathRaw, pathTestCase.path)
@@ -104,7 +104,7 @@ func BenchmarkRadixTreeFind(b *testing.B) {
 
 		route := NewRoute()
 		route.SetPattern(path)
-		route.AddHandler(MethodGet, http.HandlerFunc(testHandler()))
+		route.AddHandlerFunc(http.MethodGet, testHandler())
 		tree.Insert(route)
 	}
 

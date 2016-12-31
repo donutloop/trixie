@@ -64,7 +64,7 @@ func (r *Router) UseTree(constructer func() RouteTreeInterface) {
 // mux.GetQueries(req).Get(":number") or mux.GetQueries(req).GetAll()
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	method := methods.lookupMethod(req.Method)
+	method := methods.lookup(req.Method)
 
 	if method == methodNotFound {
 		r.notFoundHandler().ServeHTTP(w, req)
@@ -132,16 +132,16 @@ func cleanPath(p string) string {
 }
 
 // RegisterRoute registers and validates a new route
-func (r *Router) RegisterRoute(method Method, pattern string, handler http.Handler) RouteInterface {
+func (r *Router) RegisterRoute(route RouteInterface) {
 
 	if r.tree == nil {
 		r.tree = r.treeConstructor()
 	}
 
-	route := r.routeConstructor()
-	route.AddHandler(method, handler)
-	route.SetPattern(pattern)
+	r.tree.Insert(route)
+}
 
+func (r *Router) ValidateRoute(route RouteInterface) {
 	for _, validator := range Validatoren {
 		err := validator.Validate(route)
 
@@ -149,48 +149,95 @@ func (r *Router) RegisterRoute(method Method, pattern string, handler http.Handl
 			panic(err.Error())
 		}
 	}
-
-	return r.tree.Insert(route)
 }
 
 // Handle registers a new route with a matcher for the URL path.
-func (r *Router) Handle(method Method, pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(method, pattern, http.HandlerFunc(handler))
+func (r *Router) Handle(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(method, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Get registers a new get route for the URL path
 func (r *Router) Get(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodGet, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodGet, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Put registers a new put route for the URL path
 func (r *Router) Put(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodPut, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodPut, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Post registers a new post route for the URL path
 func (r *Router) Post(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodPost, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodPost, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Delete registers a new delete route for the URL path
 func (r *Router) Delete(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodDelete, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodDelete, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Patch registers a new patch route for the URL path
 func (r *Router) Patch(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodPatch, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodPatch, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Options registers a new options route for the URL path
 func (r *Router) Options(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodOptions, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodOptions, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 // Head registers a new head route for the URL path
 func (r *Router) Head(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	return r.RegisterRoute(MethodHead, pattern, http.HandlerFunc(handler))
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandlerFunc(http.MethodHead, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
+}
+
+func (r *Router) Path(pattern string, callback func(route RouteInterface)) RouteInterface {
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	callback(route)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
 }
 
 var methods = newMethods()
@@ -205,14 +252,23 @@ func newMethods() *Methods {
 	}
 }
 
-// lookupMethod check if method exists when return Method else return MethodNotFound
-func (m *Methods) lookupMethod(method string) Method {
+// lookup check if method exists when return Method else return MethodNotFound
+func (m *Methods) lookup(method string) Method {
 
-	if method, found := m.ms[method]; found {
-		return method
+	if value, found := m.ms[method]; found {
+		return value
 	}
 
 	return methodNotFound
+}
+
+func (m *Methods) lookupID(method Method) string {
+	for k, v := range m.ms {
+		if method == v {
+			return k
+		}
+	}
+	return ""
 }
 
 func (m *Methods) Set(method string, methodN Method) {
