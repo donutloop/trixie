@@ -39,8 +39,18 @@ type Router struct {
 	treeConstructor func() RouteTreeInterface
 	// This defines the tree for routes.
 	tree RouteTreeInterface
+	// this builds a route
+	routeConstructor func() RouteInterface
 }
 
+// UseRoute that you can use diffrent route versions
+// See RouteInterface for more details (route.go)
+func (r *Router) UseRoute(constructer func() RouteInterface) {
+	r.routeConstructor = constructer
+}
+
+// UseTree that you can use diffrent tree versions
+// See TreeInterface for more details (tree.go)
 func (r *Router) UseTree(constructer func() RouteTreeInterface) {
 	r.treeConstructor = constructer
 }
@@ -128,7 +138,7 @@ func (r *Router) RegisterRoute(method Method, pattern string, handler http.Handl
 		r.tree = r.treeConstructor()
 	}
 
-	route := NewRoute()
+	route := r.routeConstructor()
 	route.AddHandler(method, handler)
 	route.SetPattern(pattern)
 
