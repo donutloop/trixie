@@ -10,13 +10,13 @@ import (
 )
 
 type routeTestCase struct {
-	title      string
-	path       string
-	method     string
-	statusCode int
-	queries    map[string][]string
-	vars       map[string]string
-	route      func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request))
+	title       string
+	path        string
+	method      string
+	statusCode  int
+	queries     map[string][]string
+	vars        map[string]string
+	defineRoute func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request))
 }
 
 func TestPath(t *testing.T) {
@@ -26,8 +26,19 @@ func TestPath(t *testing.T) {
 			path:       "/api/",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
-			route: func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request)) {
+			defineRoute: func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request)) {
 				r.Get(path, handler)
+			},
+		},
+		{
+			title:      "(Path) Path route with single path",
+			path:       "/api/",
+			method:     http.MethodGet,
+			statusCode: http.StatusOK,
+			defineRoute: func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request)) {
+				r.Path(path, func(route RouteInterface) {
+					route.AddHandlerFunc(method, handler)
+				})
 			},
 		},
 	}
@@ -49,7 +60,7 @@ func testSingleRoute(rt routeTestCase) (int, string, bool) {
 	}
 
 	r := Classic()
-	rt.route(r, rt.path, rt.method, handler)
+	rt.defineRoute(r, rt.path, rt.method, handler)
 
 	req, _ := http.NewRequest(rt.method, "http://localhost"+rt.path, nil)
 	res := httptest.NewRecorder()

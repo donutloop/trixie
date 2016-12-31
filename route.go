@@ -18,7 +18,8 @@ const (
 )
 
 type RouteInterface interface {
-	AddHandler(method Method, handler http.Handler) RouteInterface
+	AddHandler(method string, handler http.Handler) RouteInterface
+	AddHandlerFunc(method string, handler func(http.ResponseWriter, *http.Request)) RouteInterface
 	SetPattern(string) RouteInterface
 	GetPattern() string
 	GetHandler(Method) http.Handler
@@ -38,8 +39,13 @@ type Route struct {
 	pattern  string
 }
 
-func (r *Route) AddHandler(method Method, handler http.Handler) RouteInterface {
-	r.handlers[method] = handler
+func (r *Route) AddHandlerFunc(method string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
+	r.handlers[methods.lookup(method)] = http.HandlerFunc(handler)
+	return r
+}
+
+func (r *Route) AddHandler(method string, handler http.Handler) RouteInterface {
+	r.handlers[methods.lookup(method)] = handler
 	return r
 }
 
@@ -50,7 +56,7 @@ func (r *Route) GetHandler(method Method) http.Handler {
 func (r *Route) AddHandlers(handlers Handlers) RouteInterface {
 
 	for method, handler := range handlers {
-		r.AddHandler(method, handler)
+		r.handlers[method] = handler
 	}
 
 	return r
