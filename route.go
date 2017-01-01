@@ -40,12 +40,12 @@ type Route struct {
 }
 
 func (r *Route) AddHandlerFunc(method string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	r.handlers[methods.lookup(method)] = http.HandlerFunc(handler)
+	r.handlers[Methods.lookup(method)] = http.HandlerFunc(handler)
 	return r
 }
 
 func (r *Route) AddHandler(method string, handler http.Handler) RouteInterface {
-	r.handlers[methods.lookup(method)] = handler
+	r.handlers[Methods.lookup(method)] = handler
 	return r
 }
 

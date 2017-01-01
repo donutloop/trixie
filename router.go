@@ -64,10 +64,11 @@ func (r *Router) UseTree(constructer func() RouteTreeInterface) {
 // mux.GetQueries(req).Get(":number") or mux.GetQueries(req).GetAll()
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	method := methods.lookup(req.Method)
+	method := Methods.lookup(req.Method)
 
 	if method == methodNotFound {
 		r.notFoundHandler().ServeHTTP(w, req)
+		return
 	}
 
 	if !r.SkipClean {
@@ -240,20 +241,20 @@ func (r *Router) Path(pattern string, callback func(route RouteInterface)) Route
 	return route
 }
 
-var methods = newMethods()
+var Methods = newMethods()
 
-type Methods struct {
+type methods struct {
 	ms map[string]Method
 }
 
-func newMethods() *Methods {
-	return &Methods{
+func newMethods() *methods {
+	return &methods{
 		ms: methodsMap,
 	}
 }
 
 // lookup check if method exists when return Method else return MethodNotFound
-func (m *Methods) lookup(method string) Method {
+func (m *methods) lookup(method string) Method {
 
 	if value, found := m.ms[method]; found {
 		return value
@@ -262,7 +263,7 @@ func (m *Methods) lookup(method string) Method {
 	return methodNotFound
 }
 
-func (m *Methods) lookupID(method Method) string {
+func (m *methods) lookupID(method Method) string {
 	for k, v := range m.ms {
 		if method == v {
 			return k
@@ -271,8 +272,12 @@ func (m *Methods) lookupID(method Method) string {
 	return ""
 }
 
-func (m *Methods) Set(method string, methodN Method) {
+func (m *methods) Set(method string, methodN Method) {
 	m.ms[method] = methodN
+}
+
+func (m *methods) Delete(method string) {
+	delete(m.ms, method)
 }
 
 // Methods a map of all standard methods

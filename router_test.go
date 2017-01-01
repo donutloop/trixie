@@ -22,7 +22,7 @@ type routeTestCase struct {
 func TestPath(t *testing.T) {
 	tests := []routeTestCase{
 		{
-			title:      "(GET) Path route with single path",
+			title:      "(GET) route with single path",
 			path:       "/api/",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
@@ -31,7 +31,7 @@ func TestPath(t *testing.T) {
 			},
 		},
 		{
-			title:      "(Path) Path route with single path",
+			title:      "(Path) route with single path",
 			path:       "/api/",
 			method:     http.MethodGet,
 			statusCode: http.StatusOK,
@@ -41,20 +41,40 @@ func TestPath(t *testing.T) {
 				})
 			},
 		},
+		{
+			title:      "Path (Method not found)",
+			path:       "/api/",
+			method:     "GETT",
+			statusCode: http.StatusNotFound,
+			defineRoute: func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request)) {
+				Methods.Set(method, Method(10))
+				r.Path(path, func(route RouteInterface) {
+					route.AddHandlerFunc(method, handler)
+				})
+				Methods.Delete(method)
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("Test: %s path: %s method %s", test.title, test.path, test.method), func(t *testing.T) {
-			code, message, ok := testSingleRoute(test)
+			statusCode, message := testSingleRoute(test)
 
-			if !ok {
-				t.Errorf("Expected status code %v, Actucal status code %v, Actucal message %v", test.statusCode, code, message)
+			switch test.statusCode {
+			case http.StatusNotFound:
+				if statusCode != test.statusCode {
+					t.Errorf("Expected status code %v, Actucal status code %v", test.statusCode, statusCode)
+				}
+			default:
+				if statusCode != test.statusCode || message != "succesfully" {
+					t.Errorf("Expected status code %v, Actucal status code %v", test.statusCode, statusCode)
+				}
 			}
 		})
 	}
 }
 
-func testSingleRoute(rt routeTestCase) (int, string, bool) {
+func testSingleRoute(rt routeTestCase) (int, string) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("succesfully"))
 	}
@@ -70,14 +90,10 @@ func testSingleRoute(rt routeTestCase) (int, string, bool) {
 	_, err := io.Copy(&content, res.Body)
 
 	if err != nil {
-		return -1, "", false
+		return -1, "Error while reading of respone body"
 	}
 
-	if res.Code != rt.statusCode || content.String() != "succesfully" {
-		return res.Code, content.String(), false
-	}
-
-	return res.Code, content.String(), true
+	return res.Code, content.String()
 }
 
 func TestRouterWithMultiRoutes(t *testing.T) {
