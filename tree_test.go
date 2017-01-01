@@ -56,7 +56,7 @@ func TestRadixTreeFind(t *testing.T) {
 	for _, pathTestCase := range pathTestCases {
 		t.Run(pathTestCase.title, func(t *testing.T) {
 
-			route := tree.Find(tree.GetRoot(), methods.lookup(pathTestCase.method), pathTestCase.path)
+			route := tree.Find(tree.GetRoot(), Methods.lookup(pathTestCase.method), pathTestCase.path)
 
 			if route == nil {
 				t.Errorf("Route not found (Expected: %v, %v)", pathTestCase.pathRaw, pathTestCase.path)

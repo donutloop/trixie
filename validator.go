@@ -35,7 +35,7 @@ func NewMethodValidator() methodValidator {
 func (v methodValidator) Validate(r RouteInterface) error {
 
 	for k := range r.GetHandlers() {
-		if method := methods.lookupID(k); method == "" {
+		if method := Methods.lookupID(k); method == "" {
 			return NewBadMethodError()
 		}
 	}
