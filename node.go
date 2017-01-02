@@ -83,7 +83,6 @@ func (n *Node) GetLeaf() RouteInterface {
 }
 
 func (n *Node) AddEdge(e *Edge) {
-
 	n.AddType(e)
 	n.PopulatePattern(e)
 	n.edges[e.typ] = append(n.edges[e.typ], e)
@@ -92,7 +91,6 @@ func (n *Node) AddEdge(e *Edge) {
 
 func (n *Node) AddType(e *Edge) {
 	prefixPath := e.node.GetPrefixPath()
-
 	if strings.Contains(prefixPath, ":") {
 		e.typ = paramNode
 	} else {
@@ -111,12 +109,14 @@ func (n *Node) GetEdges() [edgeTypes]Edges {
 }
 
 func (n *Node) GetEdge(label byte) NodeInterface {
-
 	for _, edges := range n.edges {
-		for _, edge := range edges {
-			if edge.label == label {
-				return edge.node
-			}
+
+		if len(edges) == 0 {
+			continue
+		}
+
+		if node := edges.search(label); node != nil {
+			return node
 		}
 	}
 
@@ -124,15 +124,14 @@ func (n *Node) GetEdge(label byte) NodeInterface {
 }
 
 func (n *Node) ReplaceEdge(e *Edge) error {
-
 	n.AddType(e)
-
 	for i := 0; i < len(n.edges); i++ {
 		for j := 0; j < len(n.edges[i]); j++ {
 			if n.edges[i][j].label == e.label {
 				n.PopulatePattern(e)
 				n.edges[i] = append(n.edges[i][:j], n.edges[i][j+1:]...)
 				n.edges[e.typ] = append(n.edges[e.typ], e)
+				n.edges[e.typ].Sort()
 				return nil
 			}
 		}
@@ -164,4 +163,30 @@ func (e Edges) Swap(i, j int) {
 
 func (e Edges) Sort() {
 	sort.Sort(e)
+}
+
+//Implementation of divide and conquer algorithm
+func (e Edges) search(label byte) NodeInterface {
+	if len(e) == 1 {
+		if e[0].label == label {
+			return e[0].node
+		}
+		return nil
+	}
+
+	first, last := 0, len(e)-1
+	for first <= last {
+		index := (first + last) / 2
+		edge := e[index]
+
+		if edge.label == label {
+			return edge.node
+		} else if edge.label > label {
+			last = index - 1
+		} else if edge.label < label {
+			first = index + 1
+		}
+	}
+
+	return nil
 }
