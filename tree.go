@@ -62,11 +62,12 @@ func (t *RadixTree) Insert(newRoute RouteInterface) RouteInterface {
 		}
 
 		// Look for the edge
+		currentEdge := currentNode.GetEdge(search[0])
+
 		parent = currentNode
-		currentNode = currentNode.GetEdge(search[0])
 
 		// No edge, create one
-		if currentNode == nil {
+		if currentEdge == nil {
 			newNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newRoute)
 
 			parent.AddEdge(&Edge{
@@ -75,6 +76,8 @@ func (t *RadixTree) Insert(newRoute RouteInterface) RouteInterface {
 			})
 			return newRoute
 		}
+
+		currentNode = currentEdge.node
 
 		// Determine longest prefix of the search key on currentNode
 		commonPrefix := longestPrefix(search, currentNode.GetPrefixPath())

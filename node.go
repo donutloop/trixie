@@ -13,7 +13,7 @@ type NodeInterface interface {
 	GetPrefixPatternPath() string
 	GetEdges() [edgeTypes]Edges
 	AddEdge(*Edge)
-	GetEdge(label byte) NodeInterface
+	GetEdge(label byte) *Edge
 	ReplaceEdge(e *Edge) error
 	IsLeaf() bool
 	GetLeaf() RouteInterface
@@ -108,15 +108,15 @@ func (n *Node) GetEdges() [edgeTypes]Edges {
 	return n.edges
 }
 
-func (n *Node) GetEdge(label byte) NodeInterface {
+func (n *Node) GetEdge(label byte) *Edge {
 	for _, edges := range n.edges {
 
 		if len(edges) == 0 {
 			continue
 		}
 
-		if node := edges.search(label); node != nil {
-			return node
+		if edge, _ := edges.search(label); edge != nil {
+			return edge
 		}
 	}
 
@@ -124,16 +124,28 @@ func (n *Node) GetEdge(label byte) NodeInterface {
 }
 
 func (n *Node) ReplaceEdge(e *Edge) error {
+
 	n.AddType(e)
-	for i := 0; i < len(n.edges); i++ {
-		for j := 0; j < len(n.edges[i]); j++ {
-			if n.edges[i][j].label == e.label {
-				n.PopulatePattern(e)
-				n.edges[i] = append(n.edges[i][:j], n.edges[i][j+1:]...)
-				n.edges[e.typ] = append(n.edges[e.typ], e)
-				n.edges[e.typ].Sort()
+
+	for typ, edges := range n.edges {
+
+		if len(edges) == 0 {
+			continue
+		}
+
+		if edge, index := edges.search(e.label); edge != nil {
+
+			n.PopulatePattern(e)
+
+			if egdeType(typ) == e.typ {
+				edge.node = e.node
 				return nil
 			}
+
+			n.edges[typ] = append(n.edges[typ][:index], n.edges[typ][index+1:]...)
+			n.edges[e.typ] = append(n.edges[e.typ], e)
+			n.edges[e.typ].Sort()
+			return nil
 		}
 	}
 
@@ -166,12 +178,12 @@ func (e Edges) Sort() {
 }
 
 //Implementation of divide and conquer algorithm
-func (e Edges) search(label byte) NodeInterface {
+func (e Edges) search(label byte) (*Edge, int) {
 	if len(e) == 1 {
 		if e[0].label == label {
-			return e[0].node
+			return e[0], 0
 		}
-		return nil
+		return nil, -1
 	}
 
 	first, last := 0, len(e)-1
@@ -180,7 +192,7 @@ func (e Edges) search(label byte) NodeInterface {
 		edge := e[index]
 
 		if edge.label == label {
-			return edge.node
+			return edge, index
 		} else if edge.label > label {
 			last = index - 1
 		} else if edge.label < label {
@@ -188,5 +200,5 @@ func (e Edges) search(label byte) NodeInterface {
 		}
 	}
 
-	return nil
+	return nil, -1
 }
