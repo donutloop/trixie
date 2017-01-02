@@ -131,6 +131,7 @@ func (n *Node) ReplaceEdge(e *Edge) error {
 				n.PopulatePattern(e)
 				n.edges[i] = append(n.edges[i][:j], n.edges[i][j+1:]...)
 				n.edges[e.typ] = append(n.edges[e.typ], e)
+				n.edges[e.typ].Sort()
 				return nil
 			}
 		}
