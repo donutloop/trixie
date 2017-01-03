@@ -33,7 +33,7 @@ func TestReplaceEdge(t *testing.T) {
 	}
 
 	for _, edge := range edges {
-		parentNode.edges[edge.typ] = append(parentNode.edges[edge.typ], edge)
+		parentNode.AddEdge(edge)
 	}
 
 	newEdge := &Edge{
@@ -46,6 +46,74 @@ func TestReplaceEdge(t *testing.T) {
 
 	if err := parentNode.ReplaceEdge(newEdge); err != nil {
 		t.Errorf("Unexpected error while replaceing (%s)", err.Error())
+	}
+}
+
+func BenchmarkGetEdge(b *testing.B) {
+
+	parentNode := &Node{
+		edges: [edgeTypes]Edges{},
+	}
+
+	edges := []*Edge{
+		&Edge{
+			label: "a"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "b"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "c"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "d"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "e"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "f"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "g"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "h"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "i"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "j"[0],
+			typ:   staticNode,
+		},
+		&Edge{
+			label: "k"[0],
+			typ:   staticNode,
+		},
+	}
+
+	for _, edge := range edges {
+		parentNode.edges[edge.typ] = append(parentNode.edges[edge.typ], edge)
+	}
+	parentNode.edges[staticNode].Sort()
+
+	for _, v := range []string{"a", "f", "j"} {
+		b.Run(v, func(b *testing.B) {
+
+			for i := 0; i <= b.N; i++ {
+				parentNode.GetEdge(v[0])
+			}
+		})
 	}
 }
 
