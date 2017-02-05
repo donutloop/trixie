@@ -162,6 +162,16 @@ func (r *Router) Handle(method string, pattern string, handler func(http.Respons
 	return route
 }
 
+// HandleFunc registers a new route with a matcher for the URL path.
+func (r *Router) HandleFunc(method string, pattern string, handler http.Handler) RouteInterface {
+	route := r.routeConstructor()
+	route.SetPattern(pattern)
+	route.AddHandler(method, handler)
+	r.ValidateRoute(route)
+	r.RegisterRoute(route)
+	return route
+}
+
 // Get registers a new get route for the URL path
 func (r *Router) Get(pattern string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
 	route := r.routeConstructor()
