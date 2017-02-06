@@ -93,7 +93,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	route := r.tree.Find(r.tree.GetRoot(), method, req.URL.Path)
 
-	if route == nil {
+	if route == nil || !route.HasHandler(method) {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}
