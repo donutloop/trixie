@@ -38,6 +38,18 @@ func TestRadixTreeFind(t *testing.T) {
 			pathRaw: "article/:number/comment/:number",
 			path:    "article/5/comment/6",
 		},
+		{
+			title:   "Param path",
+			method:  http.MethodGet,
+			pathRaw: "/host",
+			path:    "/host",
+		},
+		{
+			title:   "Param path",
+			method:  http.MethodPost,
+			pathRaw: "/host",
+			path:    "/host",
+		},
 	}
 
 	testHandler := func() func(w http.ResponseWriter, r *http.Request) {
