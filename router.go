@@ -98,8 +98,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	RequestContext.AddCurrentRoute(req, route)
-	RequestContext.AddQueries(req)
+	req = RequestContext.AddCurrentRoute(req, route)
+	req = RequestContext.AddQueries(req)
 
 	route.GetHandler(method).ServeHTTP(w, req)
 }
