@@ -14,10 +14,10 @@ const (
 	routeKey
 )
 
-type requestContext struct{}
+type ReqContext struct{}
 
 // GetQueries returns the query variables for the current request.
-func (c requestContext) GetQueries(r *http.Request) queries {
+func (c ReqContext) GetQueries(r *http.Request) queries {
 	if value := r.Context().Value(queriesKey); value != nil {
 		return value.(queries)
 	}
@@ -29,7 +29,7 @@ func (c requestContext) GetQueries(r *http.Request) queries {
 // This only works when called inside the handler of the matched route
 // because the matched route is stored in the request context which is cleared
 // after the handler returns
-func (c requestContext) GetCurrentRoute(r *http.Request) RouteInterface {
+func (c ReqContext) GetCurrentRoute(r *http.Request) RouteInterface {
 	if rv := r.Context().Value(routeKey); rv != nil {
 		return rv.(RouteInterface)
 	}
@@ -37,7 +37,7 @@ func (c requestContext) GetCurrentRoute(r *http.Request) RouteInterface {
 	return nil
 }
 
-func (c requestContext) AddQueries(r *http.Request) *http.Request {
+func (c ReqContext) AddQueries(r *http.Request) *http.Request {
 	queries, err := extractQueries(r)
 
 	if err != nil || 0 == queries.Count() {
@@ -47,7 +47,7 @@ func (c requestContext) AddQueries(r *http.Request) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), queriesKey, queries))
 }
 
-func (c requestContext) AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
+func (c ReqContext) AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), routeKey, route))
 }
 
@@ -109,4 +109,4 @@ func extractQueries(req *http.Request) (queries, error) {
 	return queries, nil
 }
 
-var RequestContext = &requestContext{}
+var RequestContext = &ReqContext{}
