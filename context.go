@@ -17,9 +17,9 @@ const (
 type ReqContext struct{}
 
 // GetQueries returns the query variables for the current request.
-func (c ReqContext) GetQueries(r *http.Request) queries {
+func (c ReqContext) GetQueries(r *http.Request) Queries {
 	if value := r.Context().Value(queriesKey); value != nil {
-		return value.(queries)
+		return value.(Queries)
 	}
 
 	return nil
@@ -51,10 +51,10 @@ func (c ReqContext) AddCurrentRoute(r *http.Request, route RouteInterface) *http
 	return r.WithContext(context.WithValue(r.Context(), routeKey, route))
 }
 
-type queries map[string][]string
+type Queries map[string][]string
 
 // Get return the key value, of the current *http.Request queries
-func (q queries) Get(key string, defaultValues []string) []string {
+func (q Queries) Get(key string, defaultValues []string) []string {
 	if value, found := q[key]; found {
 
 		var found bool
@@ -75,17 +75,17 @@ func (q queries) Get(key string, defaultValues []string) []string {
 }
 
 // Get returns all queries of the current *http.Request queries
-func (q queries) GetAll() map[string][]string {
+func (q Queries) GetAll() map[string][]string {
 	return q
 }
 
 // Count returns count of the current *http.Request queries
-func (q queries) Count() int {
+func (q Queries) Count() int {
 	return len(q)
 }
 
 // extractQueries extract queries of the given *http.Request
-func extractQueries(req *http.Request) (queries, error) {
+func extractQueries(req *http.Request) (Queries, error) {
 
 	queriesRaw, err := url.ParseQuery(req.URL.RawQuery)
 
@@ -93,7 +93,7 @@ func extractQueries(req *http.Request) (queries, error) {
 		return nil, err
 	}
 
-	queries := queries(map[string][]string{})
+	queries := Queries(map[string][]string{})
 
 	if 0 == len(queriesRaw) {
 		return queries, nil
