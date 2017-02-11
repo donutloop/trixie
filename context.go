@@ -54,11 +54,24 @@ func (c requestContext) AddCurrentRoute(r *http.Request, route RouteInterface) *
 type queries map[string][]string
 
 // Get return the key value, of the current *http.Request queries
-func (q queries) Get(key string) []string {
+func (q queries) Get(key string, defaultValues []string) []string {
 	if value, found := q[key]; found {
+
+		var found bool
+		for _, vv := range value {
+			if vv != "" {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return defaultValues
+		}
+
 		return value
 	}
-	return []string{}
+	return defaultValues
 }
 
 // Get returns all queries of the current *http.Request queries
