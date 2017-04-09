@@ -1,214 +1,205 @@
 package tmux
 
 import (
-	"regexp"
 	"strings"
+	"regexp"
 )
 
 // RouteTreeInterface if like you to implement your own tree version, feel free to do it
 type RouteTreeInterface interface {
-	UseNode(func() NodeInterface)
+	UseNode(func() *Node)
 	Insert(RouteInterface) RouteInterface
-	Find(NodeInterface, Method, string) RouteInterface
-	GetRoot() NodeInterface
+	Find(*Node, Method, string) RouteInterface
+	GetRoot() *Node
 }
 
-// RadixTree implements RouteTreeInterface. This can be treated as a
-// Dictionary abstract data type. The main advantage over
-// a standard hash map is prefix-based lookups and ordered iteration.
-// based on go-radix ideas (github.com/armon/go-radix)
-type RadixTree struct {
-	root            NodeInterface
-	nodeConstructor func() NodeInterface
+type Tree struct {
+	root            *Node
+	nodeConstructor func() *Node
 }
 
-// NewRadixTree returns an empty Radix Tree
-func NewRadixTree(nodeConstructor func() NodeInterface) func() RouteTreeInterface {
+// NewTree returns an empty Radix Tree
+func NewTree(nodeConstructor func() *Node) func() RouteTreeInterface {
 	return func() RouteTreeInterface {
-		tree := &RadixTree{}
+		tree := &Tree{}
 		tree.UseNode(nodeConstructor)
 		tree.root = tree.nodeConstructor()
+		tree.root.root = true
 		return tree
 	}
 }
 
 // UseNode that you can use diffrent node versions
 // See NodeInterface for more details (node.go)
-func (t *RadixTree) UseNode(constructer func() NodeInterface) {
+func (t *Tree) UseNode(constructer func() *Node) {
 	t.nodeConstructor = constructer
 }
 
-func (t *RadixTree) GetRoot() NodeInterface {
+func (t *Tree) GetRoot() *Node {
 	return t.root
+}
+
+func (t *Tree) pathSegments(p string) []string {
+	return strings.Split(strings.Trim(p, "/"), "/")
 }
 
 // Insert is used to add a new entry or update
 // an existing entry.
-func (t *RadixTree) Insert(newRoute RouteInterface) RouteInterface {
-	var parent NodeInterface
+func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 	currentNode := t.root
-	search := newRoute.GetPattern()
+	pathSegments := t.pathSegments(newRoute.GetPattern())
+	currentSeg := pathSegments[0]
+	currentSegTyp := t.checkNodeType(currentSeg)
+	var nextSeg string
+	next := true
+	if len(pathSegments) > 1 {
+		pathSegments = pathSegments[1:]
+	} else {
+		pathSegments = make([]string, 0, 0)
+	}
 
 	for {
-		// Handle key exhaution
-		if len(search) == 0 {
-			if currentNode.IsLeaf() {
-				currentNode.SetLeaf(mergeRoutes(currentNode.GetLeaf(), newRoute))
-				return currentNode.GetLeaf()
+
+		if !next {
+			if currentNode.root {
+				n := NewNode()
+				n.seg = currentSeg
+				n.leaf = newRoute
+				currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
+				return newRoute
+			} else if currentSeg == currentNode.seg {
+
+				if currentNode.leaf == nil {
+					currentNode.leaf = newRoute
+				} else {
+					currentNode.leaf = mergeRoutes(currentNode.leaf, newRoute)
+				}
+
+				return newRoute
+			}
+		}
+
+		if nextSeg != "" {
+			currentSeg = nextSeg
+			currentSegTyp = t.checkNodeType(currentSeg)
+		}
+
+	outerLoop:
+		for typ, nodes := range currentNode.nodes {
+
+			if nodeType(typ) != currentSegTyp {
+				continue
 			}
 
-			currentNode.SetLeaf(newRoute)
-			return currentNode.GetLeaf()
-		}
+			for _, n := range nodes {
+				if n.seg == currentSeg {
+					if len(pathSegments) == 1 {
+						nextSeg = pathSegments[0]
+						currentNode = n
+						pathSegments = make([]string, 0, 0)
+					} else if len(pathSegments) > 1 {
+						nextSeg = pathSegments[0]
+						pathSegments = pathSegments[1:]
+						currentNode = n
+					} else if len(pathSegments) == 0{
+						currentNode = n
+						next = false
+					}
 
-		// Look for the edge
-		currentEdge := currentNode.GetEdge(search[0])
+					break outerLoop
+				}
+			}
 
-		parent = currentNode
+			n := NewNode()
+			n.seg = currentSeg
+			currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
+			currentNode = n
 
-		// No edge, create one
-		if currentEdge == nil {
-			newNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newRoute)
+			for _, seg := range pathSegments {
+				currentSegTyp := t.checkNodeType(seg)
+				n := NewNode()
+				n.seg = seg
+				currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
+				currentNode = n
+			}
 
-			parent.AddEdge(&Edge{
-				label: search[0],
-				node:  newNode,
-			})
+			currentNode.leaf = newRoute
 			return newRoute
 		}
-
-		currentNode = currentEdge.node
-
-		// Determine longest prefix of the search key on currentNode
-		commonPrefix := longestPrefix(search, currentNode.GetPrefixPath())
-
-		// Check if they share the same prefix when yes overwrite current search and continue to next iteration
-		if commonPrefix == len(currentNode.GetPrefixPath()) {
-			search = search[commonPrefix:]
-			continue
-		}
-
-		// Split the node
-		childNode := t.nodeConstructor().SetPrefixPath(search[:commonPrefix])
-
-		err := parent.ReplaceEdge(&Edge{
-			label: search[0],
-			node:  childNode,
-		})
-
-		if err != nil {
-			panic(err.Error())
-		}
-
-		// Restore the existing node
-		childNode.AddEdge(&Edge{
-			label: currentNode.GetPrefixPath()[commonPrefix],
-			node:  currentNode.SetPrefixPath(currentNode.GetPrefixPath()[commonPrefix:]),
-		})
-
-		// If the new key is a subset, add to to this node
-		search = search[commonPrefix:]
-
-		if len(search) == 0 {
-			childNode.SetLeaf(newRoute)
-			return newRoute
-		}
-
-		// Create a new edge for the node
-		newEdgeNode := t.nodeConstructor().SetPrefixPath(search).SetLeaf(newRoute)
-
-		childNode.AddEdge(&Edge{
-			label: search[0],
-			node:  newEdgeNode,
-		})
-
-		return newRoute
 	}
-}
 
-// Find is used to lookup a specific key, returning
-// the value and if it was found
-func (t *RadixTree) Find(root NodeInterface, method Method, path string) RouteInterface {
 
-	for typ, edges := range root.GetEdges() {
-
-		if len(edges) == 0 {
-			continue
-		}
-
-		node, pathSegment, ok := t.findEdge(egdeType(typ), edges, path)
-
-		if !ok {
-			continue
-		}
-
-		if len(pathSegment) == 0 && node.IsLeaf() {
-			return node.GetLeaf()
-		}
-
-		// recursively find the next node.
-		route := t.Find(node, method, pathSegment)
-		if route != nil {
-			return route
-		}
-	}
 
 	return nil
 }
 
-func (t *RadixTree) findEdge(typ egdeType, edges Edges, path string) (NodeInterface, string, bool) {
-
-	var matcher func(edge *Edge) (string, bool)
-
-	switch typ {
-	case staticNode:
-		matcher = func(edge *Edge) (string, bool) {
-
-			if edge.label == byte(path[0]) && strings.HasPrefix(path, edge.node.GetPrefixPath()) {
-				return path[len(edge.node.GetPrefixPath()):], true
-			}
-
-			return "", false
-		}
-	case paramNode:
-		fallthrough
-	case regexNode:
-		matcher = func(edge *Edge) (string, bool) {
-			reg := regexp.MustCompile(edge.node.GetPrefixPatternPath())
-
-			location := reg.FindStringIndex(path)
-
-			if 0 == len(location) {
-				return "", false
-			}
-
-			return path[location[1]:], true
-		}
+func (t *Tree) checkNodeType(seg string) nodeType {
+	var segTyp nodeType
+	if seg == ":string" || seg == ":number" {
+		segTyp = paramNode
+	} else {
+		segTyp = staticNode
 	}
 
-	for _, edge := range edges {
-		if pathSegment, ok := matcher(edge); ok {
-			return edge.node, pathSegment, true
-		}
-	}
-
-	return nil, "", false
+	return segTyp
 }
 
-// longestPrefix finds the length of the shared prefix
-// of two strings
-func longestPrefix(k1, k2 string) int {
-	max := len(k1)
-	if l := len(k2); l < max {
-		max = l
+// Find is used to lookup a specific key, returning
+// the value and if it was found
+func (t *Tree) Find(root *Node, method Method, path string) RouteInterface {
+	pathSegments := t.pathSegments(path)
+	currentSeg := pathSegments[0]
+	currentNode := t.root
+
+	if len(pathSegments) > 1 {
+		pathSegments = pathSegments[1:]
+	} else {
+		pathSegments = make([]string, 0, 0)
 	}
-	var i int
-	for i = 0; i < max; i++ {
-		if k1[i] != k2[i] {
+
+	for {
+		// Node has none sub nodes
+		if len(currentNode.nodes[0]) == 0 && len(currentNode.nodes[1]) == 0 && len(currentNode.nodes[2]) == 0{
 			break
 		}
+
+	outerLoop:
+		for typ, nodes := range currentNode.nodes {
+			for _, n := range nodes {
+				var matched bool
+				if staticNode == nodeType(typ) {
+					if n.seg == currentSeg {
+						matched = true
+					}
+				}else if paramNode == nodeType(typ) && n.seg == ":string" {
+					if match, err := regexp.MatchString("([a-zA-Z]{1,})", currentSeg); err == nil && match {
+						matched = true
+					}
+				}else if paramNode == nodeType(typ) && n.seg == ":number" {
+					if match, err := regexp.MatchString("([0-9]{1,})", currentSeg); err == nil && match {
+						matched = true
+					}
+				}
+
+				if matched {
+					if len(pathSegments) == 0 {
+						return n.leaf
+					} else if len(pathSegments) > 1 {
+						currentSeg = pathSegments[0]
+						pathSegments = pathSegments[1:]
+						currentNode = n
+					} else if len(pathSegments) == 1 {
+						currentSeg = pathSegments[0]
+						pathSegments = make([]string, 0, 0)
+						currentNode = n
+					}
+					break outerLoop
+				}
+			}
+		}
 	}
-	return i
+
+	return nil
 }
 
 func mergeRoutes(routes ...RouteInterface) RouteInterface {

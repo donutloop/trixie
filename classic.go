@@ -2,7 +2,7 @@ package tmux
 
 func Classic() *Router {
 	router := NewRouter()
-	router.UseTree(NewRadixTree(NewNode))
+	router.UseTree(NewTree(NewNode))
 	router.UseRoute(NewRoute)
 	return router
 }
