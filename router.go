@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"path"
 	"strings"
+	"github.com/donutloop/tmux/middleware"
 )
 
 // NewRouter returns a new router instance.
@@ -41,6 +42,14 @@ type Router struct {
 	tree RouteTreeInterface
 	// this builds a route
 	routeConstructor func() RouteInterface
+
+	// The middleware stack
+	middlewares []middleware.Middleware
+}
+
+// Use appends a middleware handler to the Mux middleware stack.
+func (router *Router) Use(middlewares ...middleware.Middleware) {
+	router.middlewares = append(router.middlewares, middlewares...)
 }
 
 // UseRoute that you can use diffrent route versions
@@ -98,10 +107,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	req = RequestContext.AddCurrentRoute(req, route)
-	req = RequestContext.AddQueries(req)
-
-	route.GetHandler(method).ServeHTTP(w, req)
+	middleware.Stack(r.middlewares...).Then(route.GetHandler(method)).ServeHTTP(w, req)
 }
 
 func (r *Router) notFoundHandler() http.Handler {

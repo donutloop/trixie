@@ -3,23 +3,21 @@ package tmux
 import (
 	"context"
 	"net/http"
-	"net/url"
-	"strings"
+	"github.com/donutloop/tmux/middleware"
 )
 
-type contextKey int
 
 const (
-	queriesKey contextKey = iota
-	routeKey
+	queriesKey middleware.ContextKey = "urlqueryKey"
+	routeKey = "routeKey"
 )
 
 type ReqContext struct{}
 
 // GetQueries returns the query variables for the current request.
-func (c ReqContext) GetQueries(r *http.Request) Queries {
+func (c ReqContext) GetQueries(r *http.Request) *middleware.Queries {
 	if value := r.Context().Value(queriesKey); value != nil {
-		return value.(Queries)
+		return value.(*middleware.Queries)
 	}
 
 	return nil
@@ -37,76 +35,6 @@ func (c ReqContext) GetCurrentRoute(r *http.Request) RouteInterface {
 	return nil
 }
 
-func (c ReqContext) AddQueries(r *http.Request) *http.Request {
-	queries, err := extractQueries(r)
-
-	if err != nil || 0 == queries.Count() {
-		return r
-	}
-
-	return r.WithContext(context.WithValue(r.Context(), queriesKey, queries))
-}
-
 func (c ReqContext) AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), routeKey, route))
 }
-
-type Queries map[string][]string
-
-// Get return the key value, of the current *http.Request queries
-func (q Queries) Get(key string, defaultValues []string) []string {
-	if value, found := q[key]; found {
-
-		var found bool
-		for _, vv := range value {
-			if vv != "" {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return defaultValues
-		}
-
-		return value
-	}
-	return defaultValues
-}
-
-// Get returns all queries of the current *http.Request queries
-func (q Queries) GetAll() map[string][]string {
-	return q
-}
-
-// Count returns count of the current *http.Request queries
-func (q Queries) Count() int {
-	return len(q)
-}
-
-// extractQueries extract queries of the given *http.Request
-func extractQueries(req *http.Request) (Queries, error) {
-
-	queriesRaw, err := url.ParseQuery(req.URL.RawQuery)
-
-	if err != nil {
-		return nil, err
-	}
-
-	queries := Queries(map[string][]string{})
-
-	if 0 == len(queriesRaw) {
-		return queries, nil
-	}
-
-	for k, v := range queriesRaw {
-		for _, item := range v {
-			values := strings.Split(item, ",")
-			queries[k] = append(queries[k], values...)
-		}
-	}
-
-	return queries, nil
-}
-
-var RequestContext = &ReqContext{}
