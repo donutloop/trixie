@@ -1,10 +1,10 @@
 package tmux
 
 import (
+	"github.com/donutloop/tmux/middleware"
 	"net/http"
 	"path"
 	"strings"
-	"github.com/donutloop/tmux/middleware"
 )
 
 // NewRouter returns a new router instance.
@@ -82,15 +82,15 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	if !r.SkipClean {
 
-		path := req.URL.Path
+		p := req.URL.Path
 
 		if r.UseEncodedPath {
-			path = req.URL.EscapedPath()
+			p = req.URL.EscapedPath()
 		}
 
 		// Clean path to canonical form and redirect.
-		if p := cleanPath(path); p != path {
-			w.Header().Set("Location", p)
+		if cp := cleanPath(p); p != p {
+			w.Header().Set("Location", cp)
 			w.WriteHeader(http.StatusMovedPermanently)
 			return
 		}
@@ -100,12 +100,15 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = strings.ToLower(req.URL.Path)
 	}
 
-	route := r.tree.Find(r.tree.GetRoot(), method, req.URL.Path)
+	route, params := r.tree.Find(r.tree.GetRoot(), method, req.URL.Path)
 
 	if route == nil || !route.HasHandler(method) {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}
+
+	AddCurrentRoute(req, route)
+	AddRouteParameters(req, params)
 
 	middleware.Stack(r.middlewares...).Then(route.GetHandler(method)).ServeHTTP(w, req)
 }

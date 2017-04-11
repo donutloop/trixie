@@ -1,12 +1,12 @@
 package tmux
 
 import (
-"bytes"
-"fmt"
-"io"
-"net/http"
-"net/http/httptest"
-"testing"
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 )
 
 type routeTestCase struct {

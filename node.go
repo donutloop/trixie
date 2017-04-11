@@ -14,6 +14,7 @@ func NewNode() *Node {
 	nodes[staticNode] = make([]*Node, 0, 0)
 	nodes[paramNode] = make([]*Node, 0, 0)
 	nodes[regexNode] = make([]*Node, 0, 0)
+
 	return &Node{
 		nodes: nodes,
 	}
@@ -31,4 +32,6 @@ type Node struct {
 	nodes [nodeTypes][]*Node
 
 	seg string
+
+	param map[string]string
 }

@@ -1,15 +1,16 @@
 package tmux
 
 import (
-	"strings"
+	"fmt"
 	"regexp"
+	"strings"
 )
 
 // RouteTreeInterface if like you to implement your own tree version, feel free to do it
 type RouteTreeInterface interface {
 	UseNode(func() *Node)
 	Insert(RouteInterface) RouteInterface
-	Find(*Node, Method, string) RouteInterface
+	Find(*Node, Method, string) (RouteInterface, map[string]string)
 	GetRoot() *Node
 }
 
@@ -101,7 +102,7 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 						nextSeg = pathSegments[0]
 						pathSegments = pathSegments[1:]
 						currentNode = n
-					} else if len(pathSegments) == 0{
+					} else if len(pathSegments) == 0 {
 						currentNode = n
 						next = false
 					}
@@ -111,6 +112,7 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 			}
 
 			n := NewNode()
+			currentSegTyp := t.checkNodeType(currentSeg)
 			n.seg = currentSeg
 			currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
 			currentNode = n
@@ -128,8 +130,6 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 		}
 	}
 
-
-
 	return nil
 }
 
@@ -137,6 +137,8 @@ func (t *Tree) checkNodeType(seg string) nodeType {
 	var segTyp nodeType
 	if seg == ":string" || seg == ":number" {
 		segTyp = paramNode
+	} else if len(seg) > 0 && string(seg[0]) == "#" {
+		segTyp = regexNode
 	} else {
 		segTyp = staticNode
 	}
@@ -146,10 +148,11 @@ func (t *Tree) checkNodeType(seg string) nodeType {
 
 // Find is used to lookup a specific key, returning
 // the value and if it was found
-func (t *Tree) Find(root *Node, method Method, path string) RouteInterface {
+func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map[string]string) {
 	pathSegments := t.pathSegments(path)
 	currentSeg := pathSegments[0]
 	currentNode := t.root
+	copyPathSegments := pathSegments
 
 	if len(pathSegments) > 1 {
 		pathSegments = pathSegments[1:]
@@ -159,31 +162,40 @@ func (t *Tree) Find(root *Node, method Method, path string) RouteInterface {
 
 	for {
 		// Node has none sub nodes
-		if len(currentNode.nodes[0]) == 0 && len(currentNode.nodes[1]) == 0 && len(currentNode.nodes[2]) == 0{
+		if len(currentNode.nodes[0]) == 0 && len(currentNode.nodes[1]) == 0 && len(currentNode.nodes[2]) == 0 {
 			break
 		}
 
 	outerLoop:
-		for typ, nodes := range currentNode.nodes {
-			for _, n := range nodes {
+		for _, typ := range []nodeType{regexNode, staticNode, paramNode} {
+			for _, n := range currentNode.nodes[typ] {
+
 				var matched bool
-				if staticNode == nodeType(typ) {
-					if n.seg == currentSeg {
+				if regexNode == nodeType(typ) {
+					if match, err := regexp.MatchString(n.seg[1:], currentSeg); err == nil && match {
 						matched = true
 					}
-				}else if paramNode == nodeType(typ) && n.seg == ":string" {
+				} else if paramNode == nodeType(typ) && n.seg == ":string" {
 					if match, err := regexp.MatchString("([a-zA-Z]{1,})", currentSeg); err == nil && match {
 						matched = true
 					}
-				}else if paramNode == nodeType(typ) && n.seg == ":number" {
+				} else if paramNode == nodeType(typ) && n.seg == ":number" {
 					if match, err := regexp.MatchString("([0-9]{1,})", currentSeg); err == nil && match {
+						matched = true
+					}
+				} else if staticNode == nodeType(typ) {
+					if n.seg == currentSeg {
 						matched = true
 					}
 				}
 
 				if matched {
 					if len(pathSegments) == 0 {
-						return n.leaf
+						param := map[string]string{}
+						for key, seg := range copyPathSegments {
+							param[fmt.Sprintf("seg%d", key)] = seg
+						}
+						return n.leaf, param
 					} else if len(pathSegments) > 1 {
 						currentSeg = pathSegments[0]
 						pathSegments = pathSegments[1:]
@@ -199,7 +211,7 @@ func (t *Tree) Find(root *Node, method Method, path string) RouteInterface {
 		}
 	}
 
-	return nil
+	return nil, nil
 }
 
 func mergeRoutes(routes ...RouteInterface) RouteInterface {
