@@ -10,13 +10,13 @@ import (
 )
 
 type routeTestCase struct {
-	title       string
-	path        string
-	method      string
-	statusCode  int
-	queries     map[string][]string
-	vars        map[string]string
-	defineRoute func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request))
+	title        string
+	path         string
+	rawPath      string
+	method       string
+	countOfParam int
+	statusCode   int
+	defineRoute  func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request))
 }
 
 func TestPath(t *testing.T) {
