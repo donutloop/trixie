@@ -129,8 +129,7 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 			return newRoute
 		}
 	}
-
-	return nil
+	
 }
 
 func (t *Tree) checkNodeType(seg string) nodeType {
