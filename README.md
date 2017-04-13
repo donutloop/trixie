@@ -8,7 +8,11 @@ The difference between the default mux of Go's net/http package and this mux is,
 
 ## Handler 
 
-The handler is a simple standard http.Handler ```go func(w http.ResponseWriter, r *http.Request) ```.
+The handler is a simple standard http.Handler 
+
+```go 
+func(w http.ResponseWriter, r *http.Request) 
+```
 
 ## Routing Rules
 
@@ -22,8 +26,8 @@ Some examples of valid URL patterns are:
 * `/favicon.ico`
 * `/:string/:string/:number/:number`
 
-Parameter elements starting with : indicate a parameter segment in the path.
-Regex elements starting with # indicate a regex segment in the path.
+* Parameter elements starting with : indicate a parameter segment in the path.
+* Regex elements starting with # indicate a regex segment in the path.
 
 ## Routing Priority
 
@@ -40,3 +44,29 @@ router.GET("/#([0-9]{1,})/post", handler) // highest priority
 router.GET("/:string/post", handler) // middle priority
 router.GET("/home/post", handler) // lowest priority
 ```
+
+## Example (Method GET & Regex):
+
+```go
+    package main
+
+    import (
+        "net/http"
+        "fmt"
+        "os"
+
+        "github.com/donutloop/tmux"
+    )
+
+    func main() {
+        r := tmux.Classic()
+        //URL: http://localhost:8080/user/1
+        r.Get("/user/#([0-9]){1,}", userHandler)
+        http.ListenAndServe(":80", r)
+    }
+
+    func userHandler(rw http.ResponseWriter, req *http.Request) {
+        tmux.GetRouteParameters(req)["seg2"] // value of regex segment  
+    }
+    
+ ```   

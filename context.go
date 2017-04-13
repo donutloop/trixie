@@ -39,3 +39,10 @@ func AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
 func AddRouteParameters(r *http.Request, params map[string]string) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), routeKey, params))
 }
+
+func GetRouteParameters(r *http.Request) map[string]string {
+	if rv := r.Context().Value(routeKey); rv != nil {
+		return rv.(map[string]string)
+	}
+	return nil
+}
