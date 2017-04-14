@@ -50,13 +50,14 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 	currentNode := t.root
 	pathSegments := t.pathSegments(newRoute.GetPattern())
 	currentSeg := pathSegments[0]
-	currentSegTyp := t.checkNodeType(currentSeg)
+	currentSegTyp := NodeOfType(currentSeg)
 	var nextSeg string
 	next := true
 	if len(pathSegments) > 1 {
 		pathSegments = pathSegments[1:]
 	} else {
 		pathSegments = make([]string, 0, 0)
+		next = false
 	}
 
 	for {
@@ -82,7 +83,7 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 
 		if nextSeg != "" {
 			currentSeg = nextSeg
-			currentSegTyp = t.checkNodeType(currentSeg)
+			currentSegTyp = NodeOfType(currentSeg)
 		}
 
 	outerLoop:
@@ -112,13 +113,13 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 			}
 
 			n := NewNode()
-			currentSegTyp := t.checkNodeType(currentSeg)
+			currentSegTyp := NodeOfType(currentSeg)
 			n.seg = currentSeg
 			currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
 			currentNode = n
 
 			for _, seg := range pathSegments {
-				currentSegTyp := t.checkNodeType(seg)
+				currentSegTyp := NodeOfType(seg)
 				n := NewNode()
 				n.seg = seg
 				currentNode.nodes[currentSegTyp] = append(currentNode.nodes[currentSegTyp], n)
@@ -129,21 +130,9 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 			return newRoute
 		}
 	}
-	
+
 }
 
-func (t *Tree) checkNodeType(seg string) nodeType {
-	var segTyp nodeType
-	if seg == ":string" || seg == ":number" {
-		segTyp = paramNode
-	} else if len(seg) > 0 && string(seg[0]) == "#" {
-		segTyp = regexNode
-	} else {
-		segTyp = staticNode
-	}
-
-	return segTyp
-}
 
 // Find is used to lookup a specific key, returning
 // the value and if it was found
@@ -160,8 +149,7 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 	}
 
 	for {
-		// Node has none sub nodes
-		if len(currentNode.nodes[0]) == 0 && len(currentNode.nodes[1]) == 0 && len(currentNode.nodes[2]) == 0 {
+		if !hasSubNodes(currentNode) {
 			break
 		}
 
@@ -169,26 +157,7 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 		for _, typ := range []nodeType{regexNode, staticNode, paramNode} {
 			for _, n := range currentNode.nodes[typ] {
 
-				var matched bool
-				if regexNode == nodeType(typ) {
-					if match, err := regexp.MatchString(n.seg[1:], currentSeg); err == nil && match {
-						matched = true
-					}
-				} else if paramNode == nodeType(typ) && n.seg == ":string" {
-					if match, err := regexp.MatchString("([a-zA-Z]{1,})", currentSeg); err == nil && match {
-						matched = true
-					}
-				} else if paramNode == nodeType(typ) && n.seg == ":number" {
-					if match, err := regexp.MatchString("([0-9]{1,})", currentSeg); err == nil && match {
-						matched = true
-					}
-				} else if staticNode == nodeType(typ) {
-					if n.seg == currentSeg {
-						matched = true
-					}
-				}
-
-				if matched {
+				if match(typ, currentSeg, n.seg) {
 					if len(pathSegments) == 0 {
 						param := map[string]string{}
 						for key, seg := range copyPathSegments {
@@ -211,6 +180,47 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 	}
 
 	return nil, nil
+}
+
+func hasSubNodes(n *Node) bool {
+	if len(n.nodes[0]) == 0 && len(n.nodes[1]) == 0 && len(n.nodes[2]) == 0 {
+		return false
+	}
+	return true
+}
+
+func NodeOfType(seg string) nodeType {
+	var segTyp nodeType
+	if seg == ":string" || seg == ":number" {
+		segTyp = paramNode
+	} else if len(seg) > 0 && string(seg[0]) == "#" {
+		segTyp = regexNode
+	} else {
+		segTyp = staticNode
+	}
+
+	return segTyp
+}
+
+func match(typ nodeType, currentSeg, seg string) (matched bool) {
+	if regexNode == nodeType(typ) {
+		if match, err := regexp.MatchString(seg[1:], currentSeg); err == nil && match {
+			matched = true
+		}
+	} else if paramNode == nodeType(typ) && seg == ":string" {
+		if match, err := regexp.MatchString("([a-zA-Z]{1,})", currentSeg); err == nil && match {
+			matched = true
+		}
+	} else if paramNode == nodeType(typ) && seg == ":number" {
+		if match, err := regexp.MatchString("([0-9]{1,})", currentSeg); err == nil && match {
+			matched = true
+		}
+	} else if staticNode == nodeType(typ) {
+		if seg == currentSeg {
+			matched = true
+		}
+	}
+	return matched
 }
 
 func mergeRoutes(routes ...RouteInterface) RouteInterface {
