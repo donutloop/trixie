@@ -2,28 +2,17 @@ package trixie
 
 import "net/http"
 
-type Method int8
+type method string
 
-type Handlers map[Method]http.Handler
-
-// Method of request
-const (
-	MethodGet Method = iota
-	MethodPost
-	MethodPut
-	MethodDelete
-	MethodOptions
-	MethodPatch
-	MethodHead
-)
+type Handlers map[string]http.Handler
 
 type RouteInterface interface {
-	AddHandler(method string, handler http.Handler) RouteInterface
-	AddHandlerFunc(method string, handler func(http.ResponseWriter, *http.Request)) RouteInterface
+	AddHandler(string, http.Handler) RouteInterface
+	AddHandlerFunc(string, func(http.ResponseWriter, *http.Request)) RouteInterface
 	SetPattern(string) RouteInterface
 	GetPattern() string
-	GetHandler(Method) http.Handler
-	HasHandler(Method) bool
+	GetHandler(string) http.Handler
+	HasHandler(string) bool
 	GetHandlers() Handlers
 	AddHandlers(Handlers) RouteInterface
 }
@@ -40,16 +29,16 @@ type Route struct {
 }
 
 func (r *Route) AddHandlerFunc(method string, handler func(http.ResponseWriter, *http.Request)) RouteInterface {
-	r.handlers[Methods.lookup(method)] = http.HandlerFunc(handler)
+	r.handlers[method] = http.HandlerFunc(handler)
 	return r
 }
 
 func (r *Route) AddHandler(method string, handler http.Handler) RouteInterface {
-	r.handlers[Methods.lookup(method)] = handler
+	r.handlers[method] = handler
 	return r
 }
 
-func (r *Route) GetHandler(method Method) http.Handler {
+func (r *Route) GetHandler(method string) http.Handler {
 	return r.handlers[method]
 }
 
@@ -75,7 +64,7 @@ func (r *Route) GetPattern() string {
 	return r.pattern
 }
 
-func (r *Route) HasHandler(method Method) bool {
+func (r *Route) HasHandler(method string) bool {
 	if _, found := r.handlers[method]; found {
 		return true
 	}

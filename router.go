@@ -73,9 +73,8 @@ func (r *Router) UseTree(constructer func() RouteTreeInterface) {
 // mux.GetQueries(req).Get(":number") or mux.GetQueries(req).GetAll()
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
-	method := Methods.lookup(req.Method)
-
-	if method == methodNotFound {
+	found := Methods.lookup(req.Method)
+	if !found {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}
@@ -101,7 +100,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	route, params, err := r.tree.Find(r.tree.GetRoot(), req.URL.Path)
-	if err != nil || !route.HasHandler(method) {
+	if err != nil || !route.HasHandler(req.Method) {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}
@@ -109,7 +108,7 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	req = AddCurrentRoute(req, route)
 	req = AddRouteParameters(req, params)
 
-	middleware.Stack(r.middlewares...).Then(route.GetHandler(method)).ServeHTTP(w, req)
+	middleware.Stack(r.middlewares...).Then(route.GetHandler(req.Method)).ServeHTTP(w, req)
 }
 
 func (r *Router) notFoundHandler() http.Handler {
@@ -262,7 +261,7 @@ func (r *Router) Path(pattern string, callback func(route RouteInterface)) Route
 var Methods = newMethods()
 
 type methods struct {
-	ms map[string]Method
+	ms map[string]struct{}
 }
 
 func newMethods() *methods {
@@ -271,27 +270,17 @@ func newMethods() *methods {
 	}
 }
 
-// lookup check if method exists when return Method else return MethodNotFound
-func (m *methods) lookup(method string) Method {
+func (m *methods) lookup(method string) bool {
 
-	if value, found := m.ms[method]; found {
-		return value
+	if _, found := m.ms[method]; found {
+		return true
 	}
 
-	return methodNotFound
+	return false
 }
 
-func (m *methods) lookupID(method Method) string {
-	for k, v := range m.ms {
-		if method == v {
-			return k
-		}
-	}
-	return ""
-}
-
-func (m *methods) Set(method string, methodN Method) {
-	m.ms[method] = methodN
+func (m *methods) Set(method string) {
+	m.ms[method] = struct {}{}
 }
 
 func (m *methods) Delete(method string) {
@@ -299,14 +288,12 @@ func (m *methods) Delete(method string) {
 }
 
 // Methods a map of all standard methods
-var methodsMap = map[string]Method{
-	http.MethodGet:     MethodGet,
-	http.MethodPost:    MethodPost,
-	http.MethodPut:     MethodPut,
-	http.MethodDelete:  MethodDelete,
-	http.MethodPatch:   MethodPatch,
-	http.MethodOptions: MethodOptions,
-	http.MethodHead:    MethodHead,
+var methodsMap = map[string]struct{}{
+	http.MethodGet: 	{},
+	http.MethodPost:    {},
+	http.MethodPut:     {},
+	http.MethodDelete:  {},
+	http.MethodPatch:   {},
+	http.MethodOptions: {},
+	http.MethodHead:    {},
 }
-
-var methodNotFound Method = -1
