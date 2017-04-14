@@ -1,7 +1,7 @@
-package tmux
+package trixie
 
 import (
-	"github.com/donutloop/tmux/middleware"
+	"github.com/donutloop/trixie/middleware"
 	"net/http"
 	"path"
 	"strings"

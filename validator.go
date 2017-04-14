@@ -1,4 +1,4 @@
-package tmux
+package trixie
 
 //Validator validates the incomming value against a valid value/s
 type Validator interface {

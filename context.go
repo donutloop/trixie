@@ -1,8 +1,8 @@
-package tmux
+package trixie
 
 import (
 	"context"
-	"github.com/donutloop/tmux/middleware"
+	"github.com/donutloop/trixie/middleware"
 	"net/http"
 )
 

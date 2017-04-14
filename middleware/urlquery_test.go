@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/donutloop/tmux/middleware"
+	"github.com/donutloop/trixie/middleware"
 )
 
 func TestURLQuery(t *testing.T) {

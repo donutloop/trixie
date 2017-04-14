@@ -1,6 +1,6 @@
-package tmux
+package trixie
 
-import "github.com/donutloop/tmux/middleware"
+import "github.com/donutloop/trixie/middleware"
 
 func Classic() *Router {
 	router := NewRouter()

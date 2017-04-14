@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/donutloop/tmux.svg?branch=master)](https://travis-ci.org/donutloop/tmux)
+[![Build Status](https://travis-ci.org/donutloop/trixie.svg?branch=master)](https://travis-ci.org/donutloop/trixie)
 
-# What is tmux (Tree multiplexer)? 
+# What is trixie (Tree multiplexer)? 
 
-tmux is a lightweight very fast HTTP request router for Go 1.7+.
+trixie is a lightweight very fast HTTP request router for Go 1.7+.
 
 The difference between the default mux of Go's net/http package and this mux is, it's supports variables and regex in the routing pattern and matches against the request method. It also based on a tree.
 
@@ -55,18 +55,18 @@ router.GET("/home/post", handler) // lowest priority
         "fmt"
         "os"
 
-        "github.com/donutloop/tmux"
+        "github.com/donutloop/trixie"
     )
 
     func main() {
-        r := tmux.Classic()
+        r := trixie.Classic()
         //URL: http://localhost:8080/user/1
         r.Get("/user/#([0-9]){1,}", userHandler)
         http.ListenAndServe(":80", r)
     }
 
     func userHandler(rw http.ResponseWriter, req *http.Request) {
-        tmux.GetRouteParameters(req)["seg2"] // value of regex segment  
+        trixie.GetRouteParameters(req)["seg2"] // value of regex segment  
     }
     
  ```   
