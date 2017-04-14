@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"path"
 	"strings"
-	"fmt"
 )
 
 // NewRouter returns a new router instance.
