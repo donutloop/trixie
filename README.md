@@ -48,25 +48,26 @@ router.GET("/home/post", handler) // lowest priority
 ## Example (Method GET & Regex):
 
 ```go
-    package main
-
-    import (
-        "net/http"
-        "fmt"
-        "os"
-
-        "github.com/donutloop/trixie"
-    )
-
-    func main() {
-        r := trixie.Classic()
-        //URL: http://localhost:8080/user/1
-        r.Get("/user/#([0-9]){1,}", userHandler)
-        http.ListenAndServe(":80", r)
-    }
-
-    func userHandler(rw http.ResponseWriter, req *http.Request) {
-        trixie.GetRouteParameters(req)["seg2"] // value of regex segment  
-    }
+ package main
+ 
+ import (
+         "fmt"
+         "github.com/donutloop/trixie"
+         "net/http"
+ )
+ 
+ func main() {
+         r := trixie.Classic()
+         //URL: http://localhost:8080/user/1
+         r.Get("/user/#([0-9]){1,}", userHandler)
+         if err := http.ListenAndServe(":81", r); err != nil {
+                 fmt.Println(err)
+         }
+ }
+ 
+ func userHandler(rw http.ResponseWriter, req *http.Request) {
+         param := trixie.GetRouteParameters(req) // value of regex segment
+         rw.Write([]byte(param["seg1"]))
+ }
     
  ```   

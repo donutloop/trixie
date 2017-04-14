@@ -138,8 +138,12 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 // the value and if it was found
 func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map[string]string) {
 	pathSegments := t.pathSegments(path)
+	if len(pathSegments) == 0 {
+		return nil, nil
+	}
+
 	currentSeg := pathSegments[0]
-	currentNode := t.root
+	currentNode := *t.root
 	copyPathSegments := pathSegments
 
 	if len(pathSegments) > 1 {
@@ -149,14 +153,13 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 	}
 
 	for {
-		if !hasSubNodes(currentNode) {
+		if !hasSubNodes(&currentNode) {
 			break
 		}
 
 	outerLoop:
 		for _, typ := range []nodeType{regexNode, staticNode, paramNode} {
 			for _, n := range currentNode.nodes[typ] {
-
 				if match(typ, currentSeg, n.seg) {
 					if len(pathSegments) == 0 {
 						param := map[string]string{}
@@ -167,15 +170,16 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 					} else if len(pathSegments) > 1 {
 						currentSeg = pathSegments[0]
 						pathSegments = pathSegments[1:]
-						currentNode = n
+						currentNode = *n
 					} else if len(pathSegments) == 1 {
 						currentSeg = pathSegments[0]
 						pathSegments = make([]string, 0, 0)
-						currentNode = n
+						currentNode = *n
 					}
 					break outerLoop
 				}
 			}
+			currentNode.nodes[typ] = nil
 		}
 	}
 
