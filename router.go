@@ -101,14 +101,13 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	}
 
 	route, params := r.tree.Find(r.tree.GetRoot(), method, req.URL.Path)
-
 	if route == nil || !route.HasHandler(method) {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}
 
-	AddCurrentRoute(req, route)
-	AddRouteParameters(req, params)
+	req = AddCurrentRoute(req, route)
+	req = AddRouteParameters(req, params)
 
 	middleware.Stack(r.middlewares...).Then(route.GetHandler(method)).ServeHTTP(w, req)
 }

@@ -9,6 +9,7 @@ import (
 const (
 	queriesKey middleware.ContextKey = "urlqueryKey"
 	routeKey                         = "routeKey"
+	paramKey                         = "paramKey"
 )
 
 // GetQueries returns the query variables for the current request.
@@ -37,11 +38,11 @@ func AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
 }
 
 func AddRouteParameters(r *http.Request, params map[string]string) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), routeKey, params))
+	return r.WithContext(context.WithValue(r.Context(), paramKey, params))
 }
 
 func GetRouteParameters(r *http.Request) map[string]string {
-	if rv := r.Context().Value(routeKey); rv != nil {
+	if rv := r.Context().Value(paramKey); rv != nil {
 		return rv.(map[string]string)
 	}
 	return nil
