@@ -100,8 +100,8 @@ func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		req.URL.Path = strings.ToLower(req.URL.Path)
 	}
 
-	route, params := r.tree.Find(r.tree.GetRoot(), method, req.URL.Path)
-	if route == nil || !route.HasHandler(method) {
+	route, params, err := r.tree.Find(r.tree.GetRoot(), req.URL.Path)
+	if err != nil || !route.HasHandler(method) {
 		r.notFoundHandler().ServeHTTP(w, req)
 		return
 	}

@@ -6,6 +6,11 @@ import (
 
 var treeRouteTestCases = []routeTestCase{
 	{
+		rawPath:      "/",
+		path:         "/",
+		countOfParam: 0,
+	},
+	{
 		rawPath:      "/home/user/comment/sub",
 		path:         "/home/user/comment/sub",
 		countOfParam: 4,
@@ -63,7 +68,12 @@ func TestTree_Insert_and_find(t *testing.T) {
 	}
 
 	for _, testCase := range treeRouteTestCases {
-		route, params := tree.Find(tree.GetRoot(), MethodGet, testCase.path)
+		route, params, err := tree.Find(tree.GetRoot(), testCase.path)
+
+		if err != nil {
+			t.Errorf("Unexpected non nil error (%s)", route)
+			return
+		}
 
 		if route == nil {
 			t.Errorf("Unexpected nil route (Expected: %s)", testCase.path)
@@ -77,6 +87,42 @@ func TestTree_Insert_and_find(t *testing.T) {
 
 		if route.GetPattern() != testCase.rawPath {
 			t.Errorf("Unexpected route (Expected: %s, Actual: %s)", testCase.rawPath, route.GetPattern())
+			return
+		}
+	}
+}
+
+func TestTreeFindFail(t *testing.T) {
+
+	testCases := []struct {
+		path  string
+		error string
+	}{
+		{
+			path:  "/",
+			error: "root is not a leaf",
+		},
+		{
+			path:  "",
+			error: "empty path",
+		},
+		{
+			path:  "/home",
+			error: "path not found",
+		},
+	}
+
+	tree := NewTree(NewNode)()
+	for _, testCase := range testCases {
+		route, _, err := tree.Find(tree.GetRoot(), testCase.path)
+
+		if err.Error() != testCase.error {
+			t.Errorf("Unexpected route (Expected: %s, Actual: %s)", testCase.error, err.Error())
+			return
+		}
+
+		if route != nil {
+			t.Errorf("Unexpected non nil route (Expected: %s)", testCase.path)
 			return
 		}
 	}
@@ -106,7 +152,7 @@ func BenchmarkTestTree_find(b *testing.B) {
 	for _, testCase := range treeRouteTestCases {
 		b.Run("", func(b *testing.B) {
 			for n := 0; n < b.N; n++ {
-				tree.Find(tree.GetRoot(), MethodGet, testCase.path)
+				tree.Find(tree.GetRoot(), testCase.path)
 			}
 		})
 	}
