@@ -1,6 +1,7 @@
 package trixie
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,7 +11,7 @@ import (
 type RouteTreeInterface interface {
 	UseNode(func() *Node)
 	Insert(RouteInterface) RouteInterface
-	Find(*Node, Method, string) (RouteInterface, map[string]string)
+	Find(*Node, string) (RouteInterface, map[string]string, error)
 	GetRoot() *Node
 }
 
@@ -47,6 +48,16 @@ func (t *Tree) pathSegments(p string) []string {
 // Insert is used to add a new entry or update
 // an existing entry.
 func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
+
+	if newRoute.GetPattern() == "/" {
+		if t.root.leaf == nil {
+			t.root.leaf = newRoute
+		} else {
+			t.root.leaf = mergeRoutes(t.root.leaf, newRoute)
+		}
+		return newRoute
+	}
+
 	currentNode := t.root
 	pathSegments := t.pathSegments(newRoute.GetPattern())
 	currentSeg := pathSegments[0]
@@ -133,15 +144,23 @@ func (t *Tree) Insert(newRoute RouteInterface) RouteInterface {
 
 }
 
-
 // Find is used to lookup a specific key, returning
 // the value and if it was found
-func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map[string]string) {
-	pathSegments := t.pathSegments(path)
-	if len(pathSegments) == 0 {
-		return nil, nil
+func (t *Tree) Find(root *Node, path string) (RouteInterface, map[string]string, error) {
+
+	if path == "" {
+		return nil, nil, errors.New("empty path")
 	}
 
+	if path == "/" {
+		if t.root.leaf == nil {
+			return nil, nil, errors.New("root is not a leaf")
+		} else {
+			return t.root.leaf, nil, nil
+		}
+	}
+
+	pathSegments := t.pathSegments(path)
 	currentSeg := pathSegments[0]
 	currentNode := *t.root
 	copyPathSegments := pathSegments
@@ -166,7 +185,7 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 						for key, seg := range copyPathSegments {
 							param[fmt.Sprintf("seg%d", key)] = seg
 						}
-						return n.leaf, param
+						return n.leaf, param, nil
 					} else if len(pathSegments) > 1 {
 						currentSeg = pathSegments[0]
 						pathSegments = pathSegments[1:]
@@ -183,7 +202,7 @@ func (t *Tree) Find(root *Node, method Method, path string) (RouteInterface, map
 		}
 	}
 
-	return nil, nil
+	return nil, nil, errors.New("path not found")
 }
 
 func hasSubNodes(n *Node) bool {
