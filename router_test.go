@@ -47,7 +47,7 @@ func TestPath(t *testing.T) {
 			method:     "GETT",
 			statusCode: http.StatusNotFound,
 			defineRoute: func(r *Router, path string, method string, handler func(w http.ResponseWriter, r *http.Request)) {
-				Methods.Set(method, Method(10))
+				Methods.Set(method)
 				r.Path(path, func(route RouteInterface) {
 					route.AddHandlerFunc(method, handler)
 				})
