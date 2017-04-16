@@ -70,4 +70,61 @@ router.GET("/home/post", handler) // lowest priority
          rw.Write([]byte(param["seg1"]))
  }
     
- ```   
+ ```
+    
+## Example (Method GET & String parameter):
+
+```go
+ package main
+ 
+ import (
+         "fmt"
+         "github.com/donutloop/trixie"
+         "net/http"
+ )
+ 
+ func main() {
+         r := trixie.Classic()
+         //URL: http://localhost:8080/user/1
+         r.Get("/user/:string", userHandler)
+         if err := http.ListenAndServe(":81", r); err != nil {
+                 fmt.Println(err)
+         }
+ }
+ 
+ func userHandler(rw http.ResponseWriter, req *http.Request) {
+         param := trixie.GetRouteParameters(req) // value of parameter segment
+         rw.Write([]byte(param["seg1"]))
+ }
+    
+ ```    
+ 
+## Example (Method GET & Number parameter):
+
+```go
+ package main
+ 
+ import (
+         "fmt"
+         "github.com/donutloop/trixie"
+         "net/http"
+ )
+ 
+ func main() {
+         r := trixie.Classic()
+         //URL: http://localhost:8080/user/1
+         r.Get("/user/:number", userHandler)
+         if err := http.ListenAndServe(":81", r); err != nil {
+                 fmt.Println(err)
+         }
+ }
+ 
+ func userHandler(rw http.ResponseWriter, req *http.Request) {
+         param := trixie.GetRouteParameters(req) // value of parameter segment
+         rw.Write([]byte(param["seg1"]))
+ }
+    
+ ```    
+ 
+ 
+ 

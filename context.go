@@ -6,6 +6,7 @@ import (
 	"net/http"
 )
 
+// Context keys
 const (
 	queriesKey middleware.ContextKey = "urlqueryKey"
 	routeKey                         = "routeKey"
@@ -33,14 +34,20 @@ func GetCurrentRoute(r *http.Request) RouteInterface {
 	return nil
 }
 
+// AddCurrentRoute adds a route instance to the current request context
 func AddCurrentRoute(r *http.Request, route RouteInterface) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), routeKey, route))
 }
 
+// AddCurrentRoute adds parameters of path to the current request context
 func AddRouteParameters(r *http.Request, params map[string]string) *http.Request {
 	return r.WithContext(context.WithValue(r.Context(), paramKey, params))
 }
 
+// GetRouteParameter returns the parameters of route for a given request
+// This only works when called inside the handler of the matched route
+// because the matched route is stored in the request context which is cleared
+// after the handler returns
 func GetRouteParameters(r *http.Request) map[string]string {
 	if rv := r.Context().Value(paramKey); rv != nil {
 		return rv.(map[string]string)

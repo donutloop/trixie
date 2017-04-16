@@ -17,7 +17,7 @@ func NewRouter() *Router {
 // It implements the http.Handler interface, so it can be registered to serve
 // requests:
 //
-//     var router = mux.NewRouter()
+//     var router = trixie.NewRouter()
 //
 //     func main() {
 //         http.Handle("/", router)
@@ -47,30 +47,30 @@ type Router struct {
 	middlewares []middleware.Middleware
 }
 
-// Use appends a middleware handler to the Mux middleware stack.
-func (router *Router) Use(middlewares ...middleware.Middleware) {
-	router.middlewares = append(router.middlewares, middlewares...)
+// Use appends a middleware handler to the mux middleware stack.
+func (r *Router) Use(middlewares ...middleware.Middleware) {
+	r.middlewares = append(r.middlewares, middlewares...)
 }
 
-// UseRoute that you can use diffrent route versions
+// UseRoute that you can use different route versions
 // See RouteInterface for more details (route.go)
-func (r *Router) UseRoute(constructer func() RouteInterface) {
-	r.routeConstructor = constructer
+func (r *Router) UseRoute(constructor func() RouteInterface) {
+	r.routeConstructor = constructor
 }
 
-// UseTree that you can use diffrent tree versions
+// UseTree that you can use different tree versions
 // See TreeInterface for more details (tree.go)
-func (r *Router) UseTree(constructer func() RouteTreeInterface) {
-	r.treeConstructor = constructer
+func (r *Router) UseTree(constructor func() RouteTreeInterface) {
+	r.treeConstructor = constructor
 }
 
 // ServeHTTP dispatches the handler registered in the matched route.
 //
 // When there is a match, the route variables can be retrieved calling
-// mux.GetVars(req).Get(":number") or mux.GetVars(req).GetAll()
+// trixie.GetRouteParameters(req)
 //
-// and the route queires can be retrieved calling
-// mux.GetQueries(req).Get(":number") or mux.GetQueries(req).GetAll()
+// and the route queries can be retrieved calling
+// middleware.GetQueries(req).Get("content-type") or middleware.GetQueries(req).GetAll()
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	found := Methods.lookup(req.Method)
@@ -139,7 +139,7 @@ func cleanPath(p string) string {
 	return np
 }
 
-// RegisterRoute registers and validates a new route
+// RegisterRoute registers and validates the given route
 func (r *Router) RegisterRoute(route RouteInterface) {
 
 	if r.tree == nil {
@@ -280,7 +280,7 @@ func (m *methods) lookup(method string) bool {
 }
 
 func (m *methods) Set(method string) {
-	m.ms[method] = struct {}{}
+	m.ms[method] = struct{}{}
 }
 
 func (m *methods) Delete(method string) {
@@ -289,7 +289,7 @@ func (m *methods) Delete(method string) {
 
 // Methods a map of all standard methods
 var methodsMap = map[string]struct{}{
-	http.MethodGet: 	{},
+	http.MethodGet:     {},
 	http.MethodPost:    {},
 	http.MethodPut:     {},
 	http.MethodDelete:  {},
