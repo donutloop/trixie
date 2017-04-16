@@ -31,7 +31,7 @@ func NewTree(nodeConstructor func() *Node) func() RouteTreeInterface {
 	}
 }
 
-// UseNode that you can use diffrent node versions
+// UseNode that you can use different node versions
 // See NodeInterface for more details (node.go)
 func (t *Tree) UseNode(constructer func() *Node) {
 	t.nodeConstructor = constructer
