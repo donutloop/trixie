@@ -66,7 +66,7 @@ func TestPath(t *testing.T) {
 					t.Errorf("Expected status code %v, Actucal status code %v", test.statusCode, statusCode)
 				}
 			default:
-				if statusCode != test.statusCode || message != "succesfully" {
+				if statusCode != test.statusCode || message != "successfully" {
 					t.Errorf("Expected status code %v, Actucal status code %v", test.statusCode, statusCode)
 				}
 			}
@@ -76,7 +76,7 @@ func TestPath(t *testing.T) {
 
 func testSingleRoute(rt routeTestCase) (int, string) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("succesfully"))
+		w.Write([]byte("successfully"))
 	}
 
 	r := Classic()
@@ -90,7 +90,7 @@ func testSingleRoute(rt routeTestCase) (int, string) {
 	_, err := io.Copy(&content, res.Body)
 
 	if err != nil {
-		return -1, "Error while reading of respone body"
+		return -1, "Error while reading of response body"
 	}
 
 	return res.Code, content.String()

@@ -1,10 +1,10 @@
 package middleware_test
 
 import (
+	"github.com/donutloop/trixie/middleware"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"github.com/donutloop/trixie/middleware"
 )
 
 func TestURLQuery(t *testing.T) {
@@ -16,7 +16,7 @@ func TestURLQuery(t *testing.T) {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
-		}else {
+		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
