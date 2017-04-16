@@ -155,9 +155,9 @@ func (t *Tree) Find(root *Node, path string) (RouteInterface, map[string]string,
 	if path == "/" {
 		if t.root.leaf == nil {
 			return nil, nil, errors.New("root is not a leaf")
-		} else {
-			return t.root.leaf, nil, nil
 		}
+		
+		return t.root.leaf, nil, nil
 	}
 
 	pathSegments := t.pathSegments(path)

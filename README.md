@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/donutloop/trixie.svg?branch=master)](https://travis-ci.org/donutloop/trixie)
+[![Go Report Card](https://goreportcard.com/badge/github.com/donutloop/trixie)](https://goreportcard.com/report/github.com/donutloop/trixie)
 
 # What is trixie (Tree multiplexer)? 
 
