@@ -127,5 +127,72 @@ router.GET("/home/post", handler) // lowest priority
     
  ```    
  
+## Example (Added middleware on router):
+
+"easy_middleware" is not part of the router package 
+
+```go
+package main
+
+import (
+        "fmt"
+        "github.com/donutloop/easy-middleware"
+        "github.com/donutloop/trixie"
+        "github.com/donutloop/trixie/middleware"
+        "net/http"
+)
+
+func main() {
+        r := trixie.Classic()
+
+        stack := []middleware.Middleware{
+                middleware.Middleware(easy_middleware.NoCache()),
+        }
+
+        r.Use(stack...)
+
+        //URL: http://localhost:8080/user/1
+        r.Get("/home", homeHandler)
+        if err := http.ListenAndServe(":81", r); err != nil {
+                fmt.Println(err)
+        }
+}
+
+func homeHandler(rw http.ResponseWriter, req *http.Request) {
+        rw.Write([]byte("Hello world!"))
+}    
+ ```    
  
+## Example (Added middleware on one handler):
+
+"easy_middleware" is not part of the router package 
+
+```go
+package main
+
+import (
+        "fmt"
+        "github.com/donutloop/easy-middleware"
+        "github.com/donutloop/trixie"
+        "github.com/donutloop/trixie/middleware"
+        "net/http"
+)
+
+func main() {
+        r := trixie.Classic()
+
+        stack := middleware.Stack(middleware.Middleware(easy_middleware.NoCache()))
+  
+        //URL: http://localhost:8080/user/1
+        r.HandleFunc(http.MethodGet, "/home", stack.ThenFunc(homeHandler))
+        if err := http.ListenAndServe(":81", r); err != nil {
+                fmt.Println(err)
+        }
+}
+
+func homeHandler(rw http.ResponseWriter, req *http.Request) {
+        rw.Write([]byte("Hello world!"))
+}    
+ ```    
+  
  
