@@ -3,7 +3,7 @@
 
 # What is trixie (Tree multiplexer)? 
 
-trixie is a lightweight very fast HTTP request router for Go 1.7+.
+trixie is a lightweight HTTP request router for Go 1.7+.
 
 The difference between the default mux of Go's net/http package and this mux is, it's supports variables and regex in the routing pattern and matches against the request method. It also based on a tree.
 
