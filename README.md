@@ -59,7 +59,7 @@ router.GET("/home/post", handler) // lowest priority
  
  func main() {
          r := trixie.Classic()
-         //URL: http://localhost:8080/user/1
+         //URL: http://localhost:8081/user/1
          r.Get("/user/#([0-9]){1,}", userHandler)
          if err := http.ListenAndServe(":81", r); err != nil {
                  fmt.Println(err)
@@ -86,7 +86,7 @@ router.GET("/home/post", handler) // lowest priority
  
  func main() {
          r := trixie.Classic()
-         //URL: http://localhost:8080/user/1
+         //URL: http://localhost:81/user/1
          r.Get("/user/:string", userHandler)
          if err := http.ListenAndServe(":81", r); err != nil {
                  fmt.Println(err)
@@ -113,7 +113,7 @@ router.GET("/home/post", handler) // lowest priority
  
  func main() {
          r := trixie.Classic()
-         //URL: http://localhost:8080/user/1
+         //URL: http://localhost:81/user/1
          r.Get("/user/:number", userHandler)
          if err := http.ListenAndServe(":81", r); err != nil {
                  fmt.Println(err)
@@ -151,7 +151,7 @@ func main() {
 
         r.Use(stack...)
 
-        //URL: http://localhost:8080/user/1
+        //URL: http://localhost:81/user/1
         r.Get("/home", homeHandler)
         if err := http.ListenAndServe(":81", r); err != nil {
                 fmt.Println(err)
@@ -183,7 +183,7 @@ func main() {
 
         stack := middleware.Stack(middleware.Middleware(easy_middleware.NoCache()))
   
-        //URL: http://localhost:8080/user/1
+        //URL: http://localhost:81/user/1
         r.HandleFunc(http.MethodGet, "/home", stack.ThenFunc(homeHandler))
         if err := http.ListenAndServe(":81", r); err != nil {
                 fmt.Println(err)
