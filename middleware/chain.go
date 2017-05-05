@@ -19,7 +19,7 @@ type Chain struct {
 // New serves no other function,
 // constructors are only called upon a call to Then().
 func Stack(middleware ...Middleware) Chain {
-	return Chain{middleware: append([]Middleware{}, middleware...)}
+	return Chain{middleware: append(make([]Middleware, 0, len(middleware)), middleware...)}
 }
 
 // Then chains the middleware and returns the final http.Handler.
