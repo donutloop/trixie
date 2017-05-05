@@ -21,5 +21,5 @@ func (bme *BadMethodError) Error() string { return fmt.Sprintf("Method not vaild
 
 // NewBadMethodError returns an error that formats as the given text.
 func NewBadMethodError() error {
-	return &BadMethodError{}
+	return new(BadMethodError)
 }

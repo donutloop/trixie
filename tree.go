@@ -23,7 +23,7 @@ type Tree struct {
 // NewTree returns an empty Radix Tree
 func NewTree(nodeConstructor func() *Node) func() RouteTreeInterface {
 	return func() RouteTreeInterface {
-		tree := &Tree{}
+		tree := new(Tree)
 		tree.UseNode(nodeConstructor)
 		tree.root = tree.nodeConstructor()
 		tree.root.root = true

@@ -86,8 +86,8 @@ func testSingleRoute(rt routeTestCase) (int, string) {
 	res := httptest.NewRecorder()
 	r.ServeHTTP(res, req)
 
-	var content bytes.Buffer
-	_, err := io.Copy(&content, res.Body)
+	content := new(bytes.Buffer)
+	_, err := io.Copy(content, res.Body)
 
 	if err != nil {
 		return -1, "Error while reading of response body"
@@ -162,8 +162,8 @@ func TestRouterWithMultiRoutes(t *testing.T) {
 				t.Errorf("Unexpected error (%s)", err.Error())
 			}
 
-			var content bytes.Buffer
-			_, err = io.Copy(&content, res.Body)
+			content := new(bytes.Buffer)
+			_, err = io.Copy(content, res.Body)
 
 			if err != nil {
 				t.Errorf("Unexpected error (%s)", err.Error())

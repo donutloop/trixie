@@ -9,7 +9,7 @@ import (
 
 // NewRouter returns a new router instance.
 func NewRouter() *Router {
-	return &Router{}
+	return new(Router)
 }
 
 // Router registers routes to be matched and dispatches a handler.
